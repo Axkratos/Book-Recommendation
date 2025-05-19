@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif leading-tight;
+  }
+  
+  h1 { @apply text-4xl md:text-5xl; }
+  h2 { @apply text-3xl md:text-4xl; }
+  h3 { @apply text-2xl md:text-3xl; }
+  h4 { @apply text-xl md:text-2xl; }
+  h5 { @apply text-lg md:text-xl; }
+  h6 { @apply text-base md:text-lg; }
+  
+  p { @apply leading-relaxed; }
+
+  button, .button {
+    @apply transition-all duration-200;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300;
+  }
+  
+  .book-card {
+    @apply card overflow-hidden;
+  }
+  
+  .book-cover {
+    @apply relative overflow-hidden;
+  }
+  
+  .book-cover img {
+    @apply w-full h-full object-cover transition-transform duration-500;
+  }
+  
+  .book-card:hover .book-cover img {
+    @apply scale-105;
+  }
+  
+  .tag {
+    @apply inline-block px-2 py-1 text-xs rounded-full font-medium;
+  }
+  
+  .mood-tag {
+    @apply tag bg-purple-100 text-purple-800;
+  }
+  
+  .genre-tag {
+    @apply tag bg-blue-100 text-blue-800;
+  }
+  
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply btn bg-purple-600 text-white hover:bg-purple-700;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white text-purple-700 border border-purple-600 hover:bg-purple-50;
+  }
+
+  .btn-accent {
+    @apply btn bg-orange-500 text-white hover:bg-orange-600;
+  }
+  
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center;
+  }
+  
+  .modal-content {
+    @apply bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6 z-50;
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slideUp {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
