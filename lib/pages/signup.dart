@@ -83,7 +83,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     signupTextFormField(
                       screenWidth: screenWidth,
                       icon: Icons.person,
-                      hintText: 'Enter your first name',
+                      hintText: 'Enter your full name',
                       controller: _fname,
                       onChanged: (value) {},
                       validator: (value) {
