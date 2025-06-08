@@ -1,5 +1,7 @@
 import 'package:bookrec/components/footer.dart';
+import 'package:bookrec/components/trendingBooks.dart';
 import 'package:bookrec/services/booksapi.dart'; // Assuming this exists
+import 'package:bookrec/services/sorting.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill_internal.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -392,7 +394,7 @@ class _FeaturedpageState extends State<FeaturedPage> {
                 ),
                 Container(
                   height:
-                      screenHeight * (isMobile ? 0.9 : (isTablet ? 0.8 : 0.7)),
+                      screenHeight * (isMobile ? 0.9 : (isTablet ? 0.8 : 0.8)),
                   decoration: BoxDecoration(
                     image: DecorationImage(
                       image: NetworkImage(
@@ -441,93 +443,7 @@ class _FeaturedpageState extends State<FeaturedPage> {
                             ),
                           ),
 
-                          Expanded(
-                            flex: 5,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                double width = constraints.maxWidth;
-
-                                // Define breakpoints
-
-                                if (isDesktop) {
-                                  // Desktop View - Horizontal Scroll
-                                  return ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: 8,
-                                    itemBuilder: (context, index) {
-                                      return Container(
-                                        width: width * 0.2,
-                                        margin: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              blurRadius: 4,
-                                              offset: Offset(2, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            'Book ${index + 1}',
-                                            style: GoogleFonts.lora(
-                                              fontSize: 18,
-                                              color: Colors.brown[900],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                } else {
-                                  // Mobile or Tablet View - Grid
-                                  int crossAxisCount = isMobile ? 2 : 3;
-
-                                  return GridView.builder(
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: crossAxisCount,
-                                          crossAxisSpacing: 10,
-                                          mainAxisSpacing: 10,
-                                          childAspectRatio: 0.7,
-                                        ),
-                                    itemCount: 10,
-                                    itemBuilder: (context, index) {
-                                      return Container(
-                                        margin: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              blurRadius: 4,
-                                              offset: Offset(2, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            'Book ${index + 1}',
-                                            style: GoogleFonts.lora(
-                                              fontSize: 18,
-                                              color: Colors.brown[900],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
-                              },
-                            ),
-                          ),
+                          Expanded(flex: 5, child: _buildTrendingBook(context)),
                         ],
                       ),
                     ),
@@ -758,64 +674,29 @@ class FeaturesWidget extends StatelessWidget {
   }
 }
 
-// Keep your popularbooks widget as is, since it wasn't part of the layout changes requested
-class popularbooks extends StatelessWidget {
-  const popularbooks({
-    super.key,
-    required this.screenHeight,
-    required this.name,
-  });
-  final String name;
-  final double screenHeight;
+BooksInfo booksInfo = BooksInfo();
+Future<List> trendingBooks = booksInfo.getTrendingBooks();
 
-  @override
-  Widget build(BuildContext context) {
-    BooksInfo booksInfo = BooksInfo();
-    Future<List> _bookInfo() async {
-      return await booksInfo.getBookInfo(name);
-    }
-
-    Future<List> book = _bookInfo();
-
-    return Expanded(
-      child: Container(
-        //height: screenHeight * 0.66,
-        child: FutureBuilder(
-          future: book,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(child: Text('No data found'));
-            } else {
-              Map _book = snapshot.data![0];
-              int coverId = _book['cover_i'] ?? 0;
-              if (coverId == 0) {
-                return Center(child: Text('No cover image available'));
-              }
-              String cover = coverId.toString();
-              return Column(
-                children: [
-                  Column(
-                    children: [
-                      Image.network(
-                        'https://covers.openlibrary.org/b/id/$cover-L.jpg', // Example JPG
-                        fit: BoxFit.cover,
-                        //width: double.infinity,
-                        //height: screenHeight * 0.55,
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }
-          },
-        ),
-      ),
-    );
-  }
+Widget _buildTrendingBook(BuildContext context) {
+  return FutureBuilder(
+    future: trendingBooks,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return Center(child: Text('No trending books found'));
+      } else {
+        List books = snapshot.data!;
+        return trendingBook(
+          isDesktop: isDesktop,
+          isMobile: isMobile,
+          books: books,
+        );
+      }
+    },
+  );
 }
 
 // Ensure you have these classes defined or imported correctly:
