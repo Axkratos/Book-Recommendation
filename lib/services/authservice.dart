@@ -6,7 +6,7 @@ class Authservice {
   final String baseUrl = dotenv.env['baseUrl']!;
   Future<String> sendRegisterRequest(
     String first_name,
-    String last_name,
+    //String last_name,
     String email,
     String password,
   ) async {

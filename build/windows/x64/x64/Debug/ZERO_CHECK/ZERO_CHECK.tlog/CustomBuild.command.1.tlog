@@ -1,0 +1,10 @@
+^C:\USERS\ADMINISTRATOR\DOCUMENTS\FLUTTER BOOK REC\BOOKREC\BUILD\WINDOWS\X64\CMAKEFILES\DE0B175503BB0E059D71E5F553AA790C\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" "-SC:/Users/Administrator/Documents/flutter book rec/bookrec/windows" "-BC:/Users/Administrator/Documents/flutter book rec/bookrec/build/windows/x64" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/Users/Administrator/Documents/flutter book rec/bookrec/build/windows/x64/bookrec.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

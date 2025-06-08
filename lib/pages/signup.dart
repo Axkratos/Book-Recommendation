@@ -20,7 +20,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
 
   TextEditingController _fname = TextEditingController();
-  TextEditingController _lname = TextEditingController();
+  //TextEditingController _lname = TextEditingController();
   TextEditingController _email = TextEditingController();
   TextEditingController _password = TextEditingController();
   TextEditingController _confirmPassword = TextEditingController();
@@ -206,7 +206,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       onPressed: () async {
                         if (_formKey.currentState!.validate()) {
                           String fname = _fname.text;
-                          String lname = _lname.text;
+                          //String lname = _lname.text;
                           String email = _email.text;
                           String password = _password.text;
                           showDialog(
@@ -219,7 +219,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           try {
                             final message = await _auth.sendRegisterRequest(
                               fname,
-                              lname,
+                              //lname,
                               email,
                               password,
                             );

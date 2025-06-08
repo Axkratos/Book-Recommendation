@@ -58,7 +58,7 @@ class SimpleElegantVintageFooter extends StatelessWidget {
     );
 
     return Container(
-      height: screenHeight * 0.2, // Set height to 30% of screen height
+      height: screenHeight * 0.15, // Set height to 30% of screen height
       color: vintageCream, // Main background color for the footer
       padding: EdgeInsets.symmetric(
         vertical: 20.0, // Padding for top and bottom

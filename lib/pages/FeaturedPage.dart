@@ -1,6 +1,7 @@
 import 'package:bookrec/components/footer.dart';
 import 'package:bookrec/services/booksapi.dart'; // Assuming this exists
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill_internal.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -358,6 +359,7 @@ class _FeaturedpageState extends State<FeaturedPage> {
       body: SelectionArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            bool isDesktop = constraints.maxWidth >= 1200;
             bool isMobile = constraints.maxWidth < 600;
             bool isTablet =
                 constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
@@ -390,11 +392,145 @@ class _FeaturedpageState extends State<FeaturedPage> {
                 ),
                 Container(
                   height:
-                      screenHeight * (isMobile ? 0.3 : (isTablet ? 0.5 : 0.7)),
-                  child: Image.network(
-                    'https://i.postimg.cc/0yzr0NLy/20250522-2141-Blooming-Cityscape-remix-01jvwb8ycyeansm83mthe31aqc.png',
-                    alignment: Alignment(0, -0.9),
-                    fit: BoxFit.cover,
+                      screenHeight * (isMobile ? 0.9 : (isTablet ? 0.8 : 0.7)),
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        'https://i.postimg.cc/0yzr0NLy/20250522-2141-Blooming-Cityscape-remix-01jvwb8ycyeansm83mthe31aqc.png',
+                      ),
+                      fit: BoxFit.cover,
+                      alignment: Alignment(0, -0.9),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Trending Books',
+                                  style: GoogleFonts.literata(
+                                    fontSize: _getResponsiveFontSize(
+                                      42,
+                                      isMobile: isMobile,
+                                      isTablet: isTablet,
+                                      mobileFactor: 0.7,
+                                      tabletFactor: 0.85,
+                                    ),
+                                    color: Colors.brown[900],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Icon(
+                                  FontAwesomeIcons.fire,
+                                  color: Colors.red,
+                                  size: _getResponsiveFontSize(
+                                    36,
+                                    isMobile: isMobile,
+                                    isTablet: isTablet,
+                                    mobileFactor: 0.7,
+                                    tabletFactor: 0.85,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Expanded(
+                            flex: 5,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                double width = constraints.maxWidth;
+
+                                // Define breakpoints
+
+                                if (isDesktop) {
+                                  // Desktop View - Horizontal Scroll
+                                  return ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: 8,
+                                    itemBuilder: (context, index) {
+                                      return Container(
+                                        width: width * 0.2,
+                                        margin: EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(2, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Book ${index + 1}',
+                                            style: GoogleFonts.lora(
+                                              fontSize: 18,
+                                              color: Colors.brown[900],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                } else {
+                                  // Mobile or Tablet View - Grid
+                                  int crossAxisCount = isMobile ? 2 : 3;
+
+                                  return GridView.builder(
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: crossAxisCount,
+                                          crossAxisSpacing: 10,
+                                          mainAxisSpacing: 10,
+                                          childAspectRatio: 0.7,
+                                        ),
+                                    itemCount: 10,
+                                    itemBuilder: (context, index) {
+                                      return Container(
+                                        margin: EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(2, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Book ${index + 1}',
+                                            style: GoogleFonts.lora(
+                                              fontSize: 18,
+                                              color: Colors.brown[900],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 SimpleElegantVintageFooter(), // Assuming this is defined elsewhere
@@ -665,8 +801,8 @@ class popularbooks extends StatelessWidget {
                   Column(
                     children: [
                       Image.network(
-                        'https://covers.openlibrary.org/b/id/$cover-M.jpg', // Example JPG
-                        fit: BoxFit.contain,
+                        'https://covers.openlibrary.org/b/id/$cover-L.jpg', // Example JPG
+                        fit: BoxFit.cover,
                         //width: double.infinity,
                         //height: screenHeight * 0.55,
                       ),
