@@ -88,23 +88,11 @@ class _SignUpPageState extends State<SignUpPage> {
                       onChanged: (value) {},
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your first name';
+                          return 'Please enter your full name';
                         }
                       },
                     ),
-                    SizedBox(height: screenHeight * 0.02),
-                    signupTextFormField(
-                      screenWidth: screenWidth,
-                      icon: Icons.person,
-                      hintText: 'Enter your last name',
-                      controller: _lname,
-                      onChanged: (value) {},
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your last name';
-                        }
-                      },
-                    ),
+
                     SizedBox(height: screenHeight * 0.02),
                     signupTextFormField(
                       screenWidth: screenWidth,

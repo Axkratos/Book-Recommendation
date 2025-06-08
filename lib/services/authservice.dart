@@ -1,9 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Authservice {
-  final String baseUrl = 'https://travelsathii.onrender.com';
-
+  final String baseUrl = dotenv.env['baseUrl']!;
   Future<String> sendRegisterRequest(
     String first_name,
     String last_name,
@@ -13,8 +13,8 @@ class Authservice {
     final url = Uri.parse('${baseUrl}/api/v1/auth/signup');
 
     Map<String, dynamic> registerUser = {
-      "firstName": first_name,
-      "lastName": last_name,
+      "fullName": first_name,
+      //"lastName": last_name,
       "email": email,
       "password": password,
       "confirmPassword": password,
@@ -23,7 +23,9 @@ class Authservice {
 
     final response = await http.post(
       url,
-      headers: {'content-type': 'application/json'},
+      headers: {'content-type': 'application/json', 
+      
+      },
       body: jsonEncode(registerUser),
     );
 
