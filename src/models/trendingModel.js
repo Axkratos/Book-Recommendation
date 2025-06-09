@@ -1,4 +1,4 @@
-// models/TrendingBook.js
+
 import mongoose from 'mongoose';
 
 const trendingBookSchema = new mongoose.Schema({
