@@ -72,8 +72,14 @@ class _DashboardPageState extends State<DashboardPage> {
                   context.go('/dashboard/discussion'); // Discussions
                   break;
                 case 3:
-                  ProviderUser.logout();
-                  context.go('/');
+                  context.go('/dashboard/trending');
+                  break; // Trending
+                case 4:
+                  ProviderUser.logout(); // Logout
+                  context.go('/home'); // Redirect to sign-in page
+                  break;
+
+                // Trending
               }
             });
             // Add navigation or action logic here
@@ -169,13 +175,18 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: FontAwesomeIcons.users,
                     tooltip: "Discussions",
                     index: 2,
+                  ),
+                  _buildMenuItem(
+                    icon: FontAwesomeIcons.fire,
+                    tooltip: 'Trending',
+                    index: 3,
                   ), // Changed icon
 
                   const Spacer(), // Pushes logout to the bottom
                   _buildMenuItem(
                     icon: FontAwesomeIcons.rightFromBracket,
                     tooltip: "Logout",
-                    index: 3,
+                    index: 4,
                   ),
                 ],
               ),

@@ -4,6 +4,7 @@ import 'package:bookrec/pages/dashboard.dart';
 import 'package:bookrec/pages/dashboard_home.dart';
 import 'package:bookrec/pages/dashboard_shelf.dart';
 import 'package:bookrec/pages/dashboard_discussion.dart';
+import 'package:bookrec/pages/dashboard_trending.dart';
 import 'package:bookrec/pages/mood.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
@@ -57,6 +58,10 @@ final GoRouter _router = GoRouter(
                 ),
               ],
             ),
+            GoRoute(
+              path: '/dashboard/trending',
+              builder: (context, state) => const DashboardTrending(),
+            )
           ],
         ),
       ],
