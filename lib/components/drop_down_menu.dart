@@ -21,7 +21,7 @@ class menu_drop extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(minWidth: 120, maxWidth: 200),
       child: DropdownMenu<String>(
-        width: double.infinity,
+        //width: double.infinity,
         onSelected: (value) => onChanged(value!),
         label: Text(title, style: vintageLabelStyle),
         textStyle: vintageTextStyle,

@@ -1,3 +1,4 @@
+import 'package:bookrec/components/drop_down_menu.dart';
 import 'package:bookrec/components/trendingBooks.dart';
 import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/services/booksapi.dart';
@@ -12,32 +13,92 @@ class DashboardTrending extends StatefulWidget {
 }
 
 class _DashboardTrendingState extends State<DashboardTrending> {
+  late Future<List<Book>> _trendingBooksFuture;
+  List<Book> _books = [];
+  String _selectedSort = 'Latest';
+
+  @override
+  void initState() {
+    super.initState();
+    _trendingBooksFuture = _fetchBooks();
+  }
+
+  Future<List<Book>> _fetchBooks() async {
+    final booksInfo = BooksInfo();
+    final rawBooks = await booksInfo.getTrendingBooks();
+    final parsedBooks = rawBooks.map((book) => Book.fromJson(book)).toList();
+    _books = _sort(parsedBooks, _selectedSort);
+    return _books;
+  }
+
+  List<Book> _sort(List<Book> books, String value) {
+    if (value == 'Latest') {
+      books.sort((a, b) => b.publishedYear.compareTo(a.publishedYear));
+    } else if (value == 'Alpabetical') {
+      books.sort((a, b) => a.title.compareTo(b.title));
+    } else if (value == 'Rating') {
+      books.sort((a, b) => b.averageRating.compareTo(a.averageRating));
+    }
+    return books;
+  }
+
+  void _onSortChanged(String value) {
+    setState(() {
+      _selectedSort = value;
+      _books = _sort(_books, value); // Only update ListView
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    BooksInfo booksInfo = BooksInfo();
-    Future<List> trendingBooks = booksInfo.getTrendingBooks();
+    final sortOptions = ['Latest', 'Alpabetical', 'Rating'];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EFE6), // Vintage background color
-      body: FutureBuilder<List>(
-        future: trendingBooks,
+      backgroundColor: const Color(0xFFF5EFE6),
+      body: FutureBuilder<List<Book>>(
+        future: _trendingBooksFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No trending books found.'));
           } else {
-            List books = snapshot.data!;
-
-            return ListView.builder(
-              //scrollDirection: Axis.vertical,
-              itemCount: books.length,
-              itemBuilder: (context, index) {
-                final book = Book.fromJson(books[index]);
-                return VintageBookCard(book: book, rank: index + 1);
-              },
+            return Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Trending Books',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF4A403A),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    SizedBox(
+                      width: 200,
+                      child: menu_drop(
+                        type: sortOptions,
+                        title: 'Sort by',
+                        onChanged: _onSortChanged,
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _books.length,
+                    itemBuilder: (context, index) {
+                      return VintageBookCard(
+                        book: _books[index],
+                        rank: index + 1,
+                      );
+                    },
+                  ),
+                ),
+              ],
             );
           }
         },
@@ -77,7 +138,7 @@ class VintageBookCard extends StatelessWidget {
                   child: Text(
                     '$rank',
                     style: GoogleFonts.playfairDisplay(
-                      fontSize: 110,
+                      fontSize: 90,
                       fontWeight: FontWeight.w900,
                       color: rankColor,
                     ),
@@ -126,68 +187,72 @@ class VintageBookCard extends StatelessWidget {
                     children: [
                       // Spacer for the book cover image, which will be in the Stack
                       //const SizedBox(width: 82),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 8,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              book.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.playfairDisplay(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                                color: primaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'by ${book.authors}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.lato(
-                                fontSize: 13,
-                                color: secondaryTextColor,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                            const Spacer(),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                  size: 18,
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 32,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                book.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 28,
+                                  color: primaryTextColor,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  book.averageRating.toString(),
-                                  style: GoogleFonts.lato(
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryTextColor,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Icon(
-                                  Icons.calendar_today,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'by ${book.authors}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.lato(
+                                  fontSize: 28,
                                   color: secondaryTextColor,
-                                  size: 16,
+                                  fontStyle: FontStyle.italic,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  book.publishedYear.toString(),
-                                  style: GoogleFonts.lato(
-                                    color: secondaryTextColor,
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                    size: 24,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    book.averageRating.toString(),
+                                    style: GoogleFonts.lato(
+                                      fontWeight: FontWeight.bold,
+                                      color: primaryTextColor,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    color: secondaryTextColor,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    book.publishedYear.toString(),
+                                    style: GoogleFonts.lato(
+                                      color: secondaryTextColor,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -201,7 +266,7 @@ class VintageBookCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     book.description!,
                     style: GoogleFonts.lato(
-                      fontSize: 14,
+                      fontSize: 22,
                       color: primaryTextColor,
                       fontWeight: FontWeight.bold,
                     ),
