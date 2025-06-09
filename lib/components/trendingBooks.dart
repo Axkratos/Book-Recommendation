@@ -42,7 +42,7 @@ class trendingBook extends StatelessWidget {
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () {
-                  context.go('/book/${books[index]['_id']}');
+                  context.go('/book/${books[index]['isbn10']}');
                 },
                 child: Container(
                   width: width * 0.2,

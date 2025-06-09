@@ -88,12 +88,12 @@ class VintageBookCard extends StatelessWidget {
 
     // Extracting data safely
     String title = book['title'] as String? ?? 'Unknown Title';
-    String author = book['author'] as String? ?? 'Unknown Author';
-    int? publicationYear = book['publication_year'] as int?;
-    String genre = book['genre'] as String? ?? 'N/A';
-    String summary = book['summary'] as String? ?? 'No summary available.';
-    String? coverImage = book['cover_image'] as String?;
-    double? rating = (book['rating'] as num?)?.toDouble();
+    String author = book['authors'] as String? ?? 'Unknown Author';
+    int? publicationYear = book['published_year'] as int?;
+    String genre = book['categories'] as String? ?? 'N/A';
+    String summary = book['description'] as String? ?? 'No summary available.';
+    String? coverImage = book['thumbnail'] as String?;
+    double? rating = (book['average_rating'] as num?)?.toDouble();
     int? pages = book['pages'] as int?;
     String publisher = book['publisher'] as String? ?? 'N/A';
     List<String> characters = List<String>.from(
@@ -101,7 +101,7 @@ class VintageBookCard extends StatelessWidget {
     );
     String aboutAuthor = book['about_author'] as String? ?? '';
     String theme = book['theme'] as String? ?? '';
-    String isbn = book['isbn'] as String? ?? '';
+    String isbn = book['isbn10'] as String? ?? '';
     String language = book['language'] as String? ?? '';
     String setting = book['setting'] as String? ?? '';
     List<String> adaptations = List<String>.from(
@@ -232,23 +232,23 @@ class VintageBookCard extends StatelessWidget {
                             thickness: 1.0,
                           ),
 
-                          _buildDetailRow('Genre', genre, fontSize: 18),
+                          _buildDetailRow('Genre', genre, fontSize: 30),
                           _buildDetailRow('Theme', theme, fontSize: 18),
                           if (pages != null)
                             _buildDetailRow(
                               'Pages',
                               pages.toString(),
-                              fontSize: 18,
+                              fontSize: 24,
                             ),
                           if (rating != null)
                             _buildDetailRow(
                               'Rating',
                               '${rating.toStringAsFixed(1)} / 5.0',
-                              fontSize: 14,
+                              fontSize: 30,
                             ),
-                          _buildDetailRow('Publisher', publisher, fontSize: 18),
+                          _buildDetailRow('Publisher', publisher, fontSize: 30),
                           _buildDetailRow('Language', language, fontSize: 18),
-                          _buildDetailRow('ISBN', isbn, fontSize: 18),
+                          _buildDetailRow('ISBN', isbn, fontSize: 30),
                           _buildDetailRow('Setting', setting, fontSize: 18),
 
                           _buildSectionText('Synopsis', summary, bodyTextStyle),

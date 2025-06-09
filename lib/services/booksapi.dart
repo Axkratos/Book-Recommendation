@@ -33,4 +33,16 @@ class BooksInfo {
       return [];
     }
   }
+
+  Future<Map<String, dynamic>> getSingleBook(String bookId) async {
+    final url = Uri.parse('${baseUrl}/api/v1/users/books/$bookId');
+    http.Response response = await http.get(url);
+    if (response.statusCode == 200) {
+      Map data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      print('Error fetching book: ${response.statusCode}');
+      return {};
+    }
+  }
 }
