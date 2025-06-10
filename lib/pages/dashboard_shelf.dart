@@ -9,6 +9,7 @@ import 'package:bookrec/theme/dashboard_title.dart';
 import 'package:bookrec/theme/texts.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class DashboardShelf extends StatefulWidget {
@@ -200,170 +201,181 @@ class _DashboardShelfState extends State<DashboardShelf> {
                           itemCount: _book.length,
                           itemBuilder: (context, index) {
                             final book = _book[index];
-                            return Container(
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: vintageBorderColor.withOpacity(0.5),
-                                    width: 1,
+                            return GestureDetector(
+                              onTap: () {
+                                context.go(
+                                  '/book/${book['isbn10']}/${book['title']}',
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: vintageBorderColor.withOpacity(
+                                        0.5,
+                                      ),
+                                      width: 1,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  shelf_section(
-                                    image: true,
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: Image.network(
-                                      book['cover'],
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return Icon(
-                                          Icons.broken_image,
-                                          color: Colors.grey,
-                                        );
-                                      },
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    shelf_section(
+                                      image: true,
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: Image.network(
+                                        book['cover'],
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          return Icon(
+                                            Icons.broken_image,
+                                            color: Colors.grey,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  shelf_section(
-                                    image: false,
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: Text(
-                                      book['title'],
-                                      style: vintageTextStyle,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  shelf_section(
-                                    image: false,
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: Text(
-                                      book['author'],
-                                      style: vintageTextStyle,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  shelf_section(
-                                    image: false,
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: Text(
-                                      book['rating'].toString(),
-                                      style: vintageTextStyle,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  shelf_section(
-                                    image: false,
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: Text(
-                                      book['publication_year'].toString(),
-                                      style: vintageTextStyle,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  shelf_section(
-                                    screenWidth: screenWidth,
-                                    book: book,
-                                    widget: TextButton(
-                                      onPressed: () {},
-                                      child: Text(
-                                        'Write Review',
-                                        style: vintageLabelStyle,
+                                    shelf_section(
+                                      image: false,
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: Text(
+                                        book['title'],
+                                        style: vintageTextStyle,
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
-                                    image: false,
-                                  ),
-                                  SizedBox(width: screenWidth * 0.01),
-                                  VintageButton(
-                                    text: 'Remove',
+                                    shelf_section(
+                                      image: false,
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: Text(
+                                        book['author'],
+                                        style: vintageTextStyle,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    shelf_section(
+                                      image: false,
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: Text(
+                                        book['rating'].toString(),
+                                        style: vintageTextStyle,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    shelf_section(
+                                      image: false,
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: Text(
+                                        book['publication_year'].toString(),
+                                        style: vintageTextStyle,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    shelf_section(
+                                      screenWidth: screenWidth,
+                                      book: book,
+                                      widget: TextButton(
+                                        onPressed: () {},
+                                        child: Text(
+                                          'Write Review',
+                                          style: vintageLabelStyle,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                      image: false,
+                                    ),
+                                    SizedBox(width: screenWidth * 0.01),
+                                    VintageButton(
+                                      text: 'Remove',
 
-                                    onPressed: () async {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return Builder(
-                                            builder: (
-                                              BuildContext innerContext,
-                                            ) {
-                                              return AlertDialog(
-                                                title: const Text('Confirm'),
-                                                content: const Text(
-                                                  'Do you really want to remove this book from your shelf?',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed:
-                                                        () => Navigator.of(
-                                                          innerContext,
-                                                        ).pop(false),
-                                                    child: const Text('Cancel'),
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return Builder(
+                                              builder: (
+                                                BuildContext innerContext,
+                                              ) {
+                                                return AlertDialog(
+                                                  title: const Text('Confirm'),
+                                                  content: const Text(
+                                                    'Do you really want to remove this book from your shelf?',
                                                   ),
-                                                  TextButton(
-                                                    onPressed:
-                                                        () => Navigator.of(
-                                                          innerContext,
-                                                        ).pop(true),
-                                                    child: const Text('Yes'),
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.of(
+                                                            innerContext,
+                                                          ).pop(false),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed:
+                                                          () => Navigator.of(
+                                                            innerContext,
+                                                          ).pop(true),
+                                                      child: const Text('Yes'),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
+                                        );
 
-                                      if (confirm == true) {
-                                        try {
-                                          final providerUser =
-                                              Provider.of<UserProvider>(
+                                        if (confirm == true) {
+                                          try {
+                                            final providerUser =
+                                                Provider.of<UserProvider>(
+                                                  context,
+                                                  listen: false,
+                                                );
+                                            final booksInfo = BooksInfo();
+                                            final success = await booksInfo
+                                                .removeBookFromShelf(
+                                                  providerUser.token,
+                                                  book['isbn10'],
+                                                );
+
+                                            if (success) {
+                                              setState(() {
+                                                _book.removeAt(index);
+                                              });
+
+                                              ScaffoldMessenger.of(
                                                 context,
-                                                listen: false,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    '${book['title']} removed.',
+                                                  ),
+                                                ),
                                               );
-                                          final booksInfo = BooksInfo();
-                                          final success = await booksInfo
-                                              .removeBookFromShelf(
-                                                providerUser.token,
-                                                book['isbn10'],
-                                              );
-
-                                          if (success) {
-                                            setState(() {
-                                              _book.removeAt(index);
-                                            });
-
+                                            }
+                                          } catch (e) {
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(
                                               SnackBar(
-                                                content: Text(
-                                                  '${book['title']} removed.',
-                                                ),
+                                                content: Text('Error: $e'),
                                               ),
                                             );
                                           }
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Error: $e'),
-                                            ),
-                                          );
                                         }
-                                      }
-                                    },
-                                  ), ///////
-                                ],
+                                      },
+                                    ), ///////
+                                  ],
+                                ),
                               ),
                             );
                           },
