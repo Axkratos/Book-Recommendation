@@ -661,3 +661,36 @@ export const getBookByISBN = async (req, res) => {
     });
   }
 };
+
+export const getUserBasedRecommendations = async (req, res) => {
+  const userId = req.user.id;
+  const { limit = 20, min_rating_threshold = 1.0 } = req.body;
+
+  try {
+    const response = await axios.post(
+      `${FASTAPI_URL}/recommend/user`,
+      { user_id: userId, limit, min_rating_threshold }
+    );
+
+    const recs = response.data;
+    const detailedRecs = [];
+    const isbnList = [];
+
+    for (const { isbn } of recs) {
+      const book = await getBookDetails(isbn);
+      if (book) {
+        detailedRecs.push(book);
+        isbnList.push(isbn);
+      }
+    }
+
+    const user = await User.findById(userId).select('recommendation');
+    user.recommendation.userbased = isbnList;
+    await user.save();
+
+    return res.status(200).json({ status: 'success', data: detailedRecs });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
