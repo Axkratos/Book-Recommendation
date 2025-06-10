@@ -167,6 +167,55 @@ export const addRating = async (req, res) => {
 };
 
 
+export const getRating = async (req, res) => {
+  const ISBN = req.params.isbn10;
+  const userId = req.user.id;
+
+  if (!ISBN || typeof ISBN !== 'string') {
+    return res.status(400).json({
+      status: 'fail',
+      message: 'Request params must include ISBN as a string.'
+    });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found.'
+      });
+    }
+
+    const existingRating = await Rating.findOne({ 'User-ID': userId, ISBN });
+
+    if (existingRating) {
+      return res.status(200).json({
+        status: 'success',
+        message: `Rating found for ISBN ${ISBN}.`,
+        data: {
+          rating: existingRating['Book-Rating']
+        }
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: `No rating found for ISBN ${ISBN}.`,
+      data: {
+        rating: 0
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+};
+
+
 
 export const getBooks = async (req, res) => {
   try {

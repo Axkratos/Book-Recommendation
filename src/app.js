@@ -37,7 +37,7 @@ cron.schedule('0 12 * * *', () => {
     updateTrendingBooks();
   });
 
-updateTrendingBooks();
+
 
 // importing Routes
 import userRoutes from './routes/userRoute.js'
