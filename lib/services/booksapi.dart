@@ -147,4 +147,36 @@ class BooksInfo {
       return 0;
     }
   }
+
+  Future<List<Map<String, dynamic>>> getSimilarBook(
+    String title,
+    String token,
+  ) async {
+    //final encodedTitle = 'Clara%20Callan';
+    final encodedTitle = Uri.encodeComponent(title);
+    // Replace spaces with '+' for URL encoding
+    final url = Uri.parse(
+      '${baseUrl}/api/v1/books/recommend/item/$encodedTitle',
+    );
+    final http.Response response = await http.get(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': ' Bearer $token',
+      },
+    );
+    print('Similar Book title123: $encodedTitle');
+    print('Similar Book URL: $url');
+
+    if (response.statusCode == 200) {
+      Map data = jsonDecode(response.body);
+      print('Similar Books fetched successfully: ${response.body}');
+
+      return data['data'];
+    } else {
+      print('Error fetching similar books: ${response.statusCode}');
+      print('Similar Books Response body: ${response.body}');
+      return [];
+    }
+  }
 }

@@ -36,13 +36,16 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
-        
 
         GoRoute(
-          path: '/book/:id',
+          path: '/book/:id/:title',
           builder: (context, state) {
             final id = state.pathParameters['id']!;
-            return BookAndSimilar(bookId: id);
+            final title = state.pathParameters['title']!;
+            final decodedTitle = Uri.decodeComponent(title);
+            print('Book ID: $id, Title: $decodedTitle');
+
+            return BookAndSimilar(bookId: id, title: title);
           },
         ),
         GoRoute(path: '/mood', builder: (context, state) => const Mood()),

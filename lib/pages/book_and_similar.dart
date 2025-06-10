@@ -1,15 +1,19 @@
 import 'package:bookrec/components/VintageBookCard.dart';
 import 'package:bookrec/components/similarBooks/similarBookSection.dart';
 import 'package:bookrec/dummy/book.dart';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/services/booksapi.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class BookAndSimilar extends StatefulWidget {
   final String bookId;
+  final String title;
   BookAndSimilar({
     super.key,
     //required this.screenHeight,
     required this.bookId,
+    required this.title,
   });
 
   @override
@@ -25,7 +29,6 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
     final data = await booksInfo.getSingleBook(bookId);
     final book = data['book'];
     print('Book Details Future: $book');
-
     return book; // Replace with actual API call
   }
 
@@ -38,6 +41,16 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
 
   @override
   Widget build(BuildContext context) {
+    final ProviderUser = Provider.of<UserProvider>(context);
+    Future<List<Map<String, dynamic>>> similar_books(String title) async {
+      // Simulate a network call to fetch similar books
+      final _similarBook = await booksInfo.getSimilarBook(
+        title,
+        ProviderUser.token,
+      );
+      return _similarBook;
+    }
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
     return FutureBuilder(
@@ -69,8 +82,32 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
                               book: Map<String, dynamic>.from(book_info),
                             ),
                             Expanded(
-                              child: SimilarBooksSection(
-                                similarBooks: similar_books,
+                              child: FutureBuilder(
+                                future: similar_books(widget.title),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  } else if (snapshot.hasError) {
+                                    return Center(
+                                      child: Text('Error: ${snapshot.error}'),
+                                    );
+                                  } else if (!snapshot.hasData ||
+                                      snapshot.data == null) {
+                                    return Center(
+                                      child: Text('No similar books found.'),
+                                    );
+                                  } else {
+                                    final similar_books = snapshot.data;
+                                    print('Similar Books: $similar_books');
+                                    return SimilarBooksSection(
+                                      isSmallScreen: false,
+                                      similarBooks: similar_books ?? [],
+                                    );
+                                  }
+                                },
                               ),
                             ),
                           ],
@@ -93,7 +130,7 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
                       height: 200,
                       child: SimilarBooksSection(
                         isSmallScreen: true,
-                        similarBooks: similar_books,
+                        similarBooks: [],
                       ),
                     ),
                   ],
