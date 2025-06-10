@@ -260,7 +260,11 @@ class _VintageBookCardState extends State<VintageBookCard> {
                             children: [
                               StarRating(onRatingChanged: (value) {}),
                               const SizedBox(width: 8),
-                              AddToShelfButton(onPressed: () {}),
+                              ShelfButtonWidget(
+                                bookId: widget.book['isbn10'],
+                                token: ProviderUser.token,
+                                bookData: widget.book,
+                              ),
                             ],
                           ),
                           Divider(
@@ -416,6 +420,7 @@ class _VintageBookCardState extends State<VintageBookCard> {
                                       widget.book['isbn10'],
                                       value,
                                     );
+                                    print('Rating response: $r');
                                     if (r == 'sucess') {
                                       ScaffoldMessenger.of(
                                         context,
@@ -434,7 +439,11 @@ class _VintageBookCardState extends State<VintageBookCard> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
-                                AddToShelfButton(onPressed: () {}),
+                                ShelfButtonWidget(
+                                  bookId: widget.book['isbn10'],
+                                  token: ProviderUser.token,
+                                  bookData: widget.book,
+                                ),
                               ],
                             ),
                             Divider(

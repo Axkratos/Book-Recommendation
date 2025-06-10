@@ -32,7 +32,13 @@ class Homepage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 /// --- Left: BookRec logo ---
-                title(),
+                GestureDetector(
+                  onTap: () {
+                    context.go('/');
+                    // Navigate to the home page
+                  },
+                  child: title(),
+                ),
 
                 /// --- Center: Search Bar ---
                 Expanded(

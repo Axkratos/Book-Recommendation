@@ -1,3 +1,4 @@
+import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http; // To make HTTP requests
@@ -71,6 +72,59 @@ class BooksInfo {
     } else {
       print('response status code: ${respone.body}');
       print('Error rating book: ${respone.statusCode}');
+      return 'error';
+    }
+  }
+
+  Future<String> checkShelfStatus(String bookId, String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/shelf/check/$bookId');
+    http.Response response = await http.get(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      Map data = jsonDecode(response.body);
+      return data['status'];
+    } else {
+      print('Error fetching shelf status: ${response.statusCode}');
+      return response.body.toString();
+    }
+  }
+
+  Future<String> addToShelf(Map<String, dynamic> bookData, String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/shelf/add');
+    final book = {
+      "isbn10": bookData['isbn10'],
+      "title": bookData['title'],
+      "authors": bookData['authors'],
+      "categories": bookData['categories'],
+      "thumbnail": bookData['thumbnail'],
+      "description": bookData['description'],
+      "published_year": bookData['published_year'],
+      "average_rating": bookData['average_rating'],
+      "ratings_count": bookData['ratings_count'],
+    };
+
+    http.Response response = await http.post(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(book),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      Map data = jsonDecode(response.body);
+      print('Book added to shelf successfully: ${response.statusCode}');
+      //print('Response data: ${data.toString()}');
+      print(data['status']);
+      return data['status'];
+    } else {
+      print('Error adding book to shelf: ${response.statusCode}');
+      print('Response body: ${response.body}');
       return 'error';
     }
   }
