@@ -32,11 +32,12 @@ app.use(express.static("public"))
 // Setting up cookie parser
 app.use(cookieParser());
 
-cron.schedule('0 2 * * *', () => {
+cron.schedule('0 12 * * *', () => {
     console.log('🕑 [Cron] Running daily trending update at 2:00 AM…');
     updateTrendingBooks();
   });
 
+updateTrendingBooks();
 
 // importing Routes
 import userRoutes from './routes/userRoute.js'

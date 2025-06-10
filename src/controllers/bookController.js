@@ -635,6 +635,57 @@ export const getItemBasedRecommendations = async (req, res) => {
 };
 
 
+export const getItemBasedRecommendationsByTitle = async (req, res) => {
+  const { title } = req.params;
+  const limit  = parseInt(req.query.limit, 10) || 15;
+
+  if (!title) {
+    return res
+      .status(400)
+      .json({ status: 'fail', message: 'Book title is required in URL params.' });
+  }
+
+  try {
+    // Build the exact payload you want FastAPI to see
+    const payload = {
+      "book_titles": [ title ],
+      "limit": limit
+    };
+    console.log(payload)
+
+    // Make sure JSON is sent
+    const response = await axios.post(
+      `${FASTAPI_URL}/recommend/item/balanced`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // FastAPI should reply with an array of { isbn } objects
+    const recs = response.data;
+
+    // Enrich with your getBookDetails
+    const detailedRecs = await Promise.all(
+      recs.map(async ({ isbn }) => getBookDetails(isbn))
+    );
+
+    return res
+      .status(200)
+      .json({ status: 'success', data: detailedRecs.filter(b => b) });
+
+  } catch (err) {
+    // If FastAPI returned a non-2xx, axios puts its body on err.response.data
+    const status  = err.response?.status  || 500;
+    const message = err.response?.data?.message || err.message;
+
+    console.error('[ERROR] FastAPI call failed:', status, message);
+    return res.status(status).json({ status: 'error', message });
+  }
+};
+
 export const getBookByISBN = async (req, res) => {
   const { isbn } = req.params;
 
