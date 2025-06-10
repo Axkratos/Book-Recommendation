@@ -1,4 +1,5 @@
 import 'package:bookrec/dummy/book.dart';
+import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http; // To make HTTP requests
@@ -177,6 +178,74 @@ class BooksInfo {
       print('Error fetching similar books: ${response.statusCode}');
       print('Similar Books Response body: ${response.body}');
       return [];
+    }
+  }
+
+  Future<List<Book>> fetchBooks(String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/recommend/user');
+    final http.Response response = await http.get(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': ' Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List booksJson = data['data'];
+      return booksJson.map((json) => Book.fromJson(json)).toList();
+    } else {
+      print('Error fetching books: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Failed to load books');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchBookShelf(String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/shelf');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List shelfJson = data['data']['shelf'];
+      return shelfJson.map<Map<String, dynamic>>((book) {
+        return {
+          'title': book['title'],
+          'author': book['authors'],
+          'rating': book['average_rating'] ?? 0.0,
+          'publication_year': book['published_year'],
+          'cover': book['thumbnail'],
+          'isbn10': book['isbn10'],
+        };
+      }).toList();
+    } else {
+      print('Error fetching shelf: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Failed to load bookshelf');
+    }
+  }
+
+  Future<bool> removeBookFromShelf(String token, String bookId) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/shelf/$bookId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('Failed to delete book: ${response.body}');
     }
   }
 }
