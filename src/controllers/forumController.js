@@ -98,6 +98,40 @@ export const getForumById = async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
+
+//get users forum
+export const getUserForums = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Pagination params, default page 1, limit 10
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Count total forums by user
+    const totalForums = await Forum.countDocuments({ userId });
+
+    // Fetch user forums with pagination, sorted by newest first
+    const forums = await Forum.find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      status: 'success',
+      results: forums.length,
+      totalForums,
+      page,
+      totalPages: Math.ceil(totalForums / limit),
+      data: forums
+    });
+
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 //like forum
 export const toggleLikeForum = async (req, res) => {
   const forumId = req.params.id;
