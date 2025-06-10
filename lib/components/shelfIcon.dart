@@ -24,7 +24,7 @@ class AddToShelfButton extends StatelessWidget {
           side: BorderSide(color: Colors.brown[300]!),
         ),
       ),
-      icon: const FaIcon(FontAwesomeIcons.plus, size: 16),
+      icon: const FaIcon(FontAwesomeIcons.circlePlus, size: 16),
       label: Text(
         label,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),

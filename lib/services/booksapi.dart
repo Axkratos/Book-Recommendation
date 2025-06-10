@@ -1,6 +1,9 @@
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http; // To make HTTP requests
-import 'dart:convert'; // To decode the JSON response
+import 'dart:convert';
+
+import 'package:provider/provider.dart'; // To decode the JSON response
 
 class BooksInfo {
   final String baseUrl = dotenv.env['baseUrl']!;
@@ -43,6 +46,32 @@ class BooksInfo {
     } else {
       print('Error fetching book: ${response.statusCode}');
       return {};
+    }
+  }
+
+  Future<String> bookRatings(String bookId, int value, String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/rating');
+    Map<String, dynamic> bookData = {
+      'ISBN': bookId,
+      'rating': value * 2, // Assuming a default rating of 5 for the example
+    };
+
+    http.Response respone = await http.post(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(bookData),
+    );
+    if (respone.statusCode == 200) {
+      Map data = jsonDecode(respone.body);
+      print('Book rating updated successfully: ${respone.statusCode}');
+      return 'sucess';
+    } else {
+      print('response status code: ${respone.body}');
+      print('Error rating book: ${respone.statusCode}');
+      return 'error';
     }
   }
 }

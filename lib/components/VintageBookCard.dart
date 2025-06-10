@@ -1,8 +1,11 @@
 import 'package:bookrec/components/shelfIcon.dart';
 import 'package:bookrec/components/star.dart';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:bookrec/services/booksapi.dart';
+import 'package:provider/provider.dart';
 
 // --- VINTAGE COLOR CONSTANTS (as defined above) ---
 
@@ -129,6 +132,18 @@ class _VintageBookCardState extends State<VintageBookCard> {
     print('cover image: ${coverImage ?? 'No image available'}');
 
     print('All book data: ${widget.book}');
+
+    final bookInfo = BooksInfo();
+    final ProviderUser = Provider.of<UserProvider>(context);
+    Future<String> rate(String bookID, int value) async {
+      final String response = await bookInfo.bookRatings(
+        bookID,
+        value,
+        ProviderUser.token,
+      );
+      return response;
+    }
+
     return Container(
       width: cardWidth,
       constraints: BoxConstraints(
@@ -395,7 +410,29 @@ class _VintageBookCardState extends State<VintageBookCard> {
                               ),
                             Row(
                               children: [
-                                StarRating(onRatingChanged: (value) {}),
+                                StarRating(
+                                  onRatingChanged: (value) async {
+                                    final String r = await rate(
+                                      widget.book['isbn10'],
+                                      value,
+                                    );
+                                    if (r == 'sucess') {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Rating submitted!'),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $r')),
+                                      );
+                                    }
+                                  },
+                                ),
                                 const SizedBox(width: 8),
                                 AddToShelfButton(onPressed: () {}),
                               ],
