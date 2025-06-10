@@ -258,7 +258,13 @@ class _VintageBookCardState extends State<VintageBookCard> {
                             ),
                           Row(
                             children: [
-                              StarRating(onRatingChanged: (value) {}),
+                              StarRating(
+                                token: ProviderUser.token,
+                                bookId: widget.book['isbn10'],
+                                getRatingsCount: bookInfo.getRatingsCount,
+                                size: 30,
+                                onRatingChanged: (value) {},
+                              ),
                               const SizedBox(width: 8),
                               ShelfButtonWidget(
                                 bookId: widget.book['isbn10'],
@@ -415,6 +421,10 @@ class _VintageBookCardState extends State<VintageBookCard> {
                             Row(
                               children: [
                                 StarRating(
+                                  token: ProviderUser.token,
+                                  bookId: widget.book['isbn10'],
+                                  getRatingsCount: bookInfo.getRatingsCount,
+                                  size: 30,
                                   onRatingChanged: (value) async {
                                     final String r = await rate(
                                       widget.book['isbn10'],

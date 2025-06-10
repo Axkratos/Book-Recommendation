@@ -65,7 +65,7 @@ class BooksInfo {
       },
       body: jsonEncode(bookData),
     );
-    if (respone.statusCode == 200) {
+    if (respone.statusCode == 200 || respone.statusCode == 201) {
       Map data = jsonDecode(respone.body);
       print('Book rating updated successfully: ${respone.statusCode}');
       return 'sucess';
@@ -126,6 +126,25 @@ class BooksInfo {
       print('Error adding book to shelf: ${response.statusCode}');
       print('Response body: ${response.body}');
       return 'error';
+    }
+  }
+
+  Future<int> getRatingsCount(String bookId, String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/rating/$bookId');
+    http.Response response = await http.get(
+      url,
+
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      Map data = jsonDecode(response.body);
+      return data['data']['rating'];
+    } else {
+      print('Error fetching ratings count: ${response.statusCode}');
+      return 0;
     }
   }
 }
