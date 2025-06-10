@@ -1,3 +1,4 @@
+import 'package:bookrec/components/star.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/pages/HomePage.dart';
 import 'package:bookrec/pages/book_and_similar.dart';
@@ -35,13 +36,15 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
+        
+
         GoRoute(
-      path: '/book/:id',
-      builder: (context, state) {
-        final id = state.pathParameters['id']!;
-        return BookAndSimilar(bookId: id);
-      },
-    ),
+          path: '/book/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return BookAndSimilar(bookId: id);
+          },
+        ),
         GoRoute(path: '/mood', builder: (context, state) => const Mood()),
         ShellRoute(
           builder: (BuildContext context, GoRouterState state, Widget child) {
@@ -69,7 +72,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: '/dashboard/trending',
               builder: (context, state) => const DashboardTrending(),
-            )
+            ),
           ],
         ),
       ],

@@ -1,14 +1,21 @@
+import 'package:bookrec/components/shelfIcon.dart';
+import 'package:bookrec/components/star.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // --- VINTAGE COLOR CONSTANTS (as defined above) ---
 
-class VintageBookCard extends StatelessWidget {
+class VintageBookCard extends StatefulWidget {
   final Map<String, dynamic> book;
 
   const VintageBookCard({super.key, required this.book});
 
+  @override
+  State<VintageBookCard> createState() => _VintageBookCardState();
+}
+
+class _VintageBookCardState extends State<VintageBookCard> {
   Widget _buildDetailRow(String label, String? value, {double fontSize = 15}) {
     if (value == null || value.isEmpty) return const SizedBox.shrink();
     return SelectionArea(
@@ -87,25 +94,27 @@ class VintageBookCard extends StatelessWidget {
     );
 
     // Extracting data safely
-    String title = book['title'] as String? ?? 'Unknown Title';
-    String author = book['authors'] as String? ?? 'Unknown Author';
-    int? publicationYear = book['published_year'] as int?;
-    String genre = book['categories'] as String? ?? 'N/A';
-    String summary = book['description'] as String? ?? 'No summary available.';
-    String? coverImage = book['thumbnail'] as String?;
-    double? rating = (book['average_rating'] as num?)?.toDouble();
-    int? pages = book['pages'] as int?;
-    String publisher = book['publisher'] as String? ?? 'N/A';
+    String title = widget.book['title'] as String? ?? 'Unknown Title';
+    String author = widget.book['authors'] as String? ?? 'Unknown Author';
+    int? publicationYear = widget.book['published_year'] as int?;
+    String genre = widget.book['categories'] as String? ?? 'N/A';
+    String summary =
+        widget.book['description'] as String? ?? 'No summary available.';
+    String? coverImage = widget.book['thumbnail'] as String?;
+    //'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1650033243i/41733839.jpg';
+    double? rating = (widget.book['average_rating'] as num?)?.toDouble();
+    int? pages = widget.book['pages'] as int?;
+    String publisher = widget.book['publisher'] as String? ?? '';
     List<String> characters = List<String>.from(
-      book['characters'] as List? ?? [],
+      widget.book['characters'] as List? ?? [],
     );
-    String aboutAuthor = book['about_author'] as String? ?? '';
-    String theme = book['theme'] as String? ?? '';
-    String isbn = book['isbn10'] as String? ?? '';
-    String language = book['language'] as String? ?? '';
-    String setting = book['setting'] as String? ?? '';
+    String aboutAuthor = widget.book['about_author'] as String? ?? '';
+    String theme = widget.book['theme'] as String? ?? '';
+    String isbn = widget.book['isbn10'] as String? ?? '';
+    String language = widget.book['language'] as String? ?? '';
+    String setting = widget.book['setting'] as String? ?? '';
     List<String> adaptations = List<String>.from(
-      book['adaptations'] as List? ?? [],
+      widget.book['adaptations'] as List? ?? [],
     );
 
     // Define a width for the image part and a height for the card.
@@ -115,6 +124,11 @@ class VintageBookCard extends StatelessWidget {
     // Define a max height for the card to keep it manageable
     final double cardMaxHeight = MediaQuery.of(context).size.height * 0.75;
 
+    print('📚 DEBUG inside VintageBookCard:');
+    print('Title: ${widget.book['title']}');
+    print('cover image: ${coverImage ?? 'No image available'}');
+
+    print('All book data: ${widget.book}');
     return Container(
       width: cardWidth,
       constraints: BoxConstraints(
@@ -140,7 +154,8 @@ class VintageBookCard extends StatelessWidget {
                   // Align children to the top
                   children: <Widget>[
                     // --- Left Side: Image ---
-                    Container(
+                    SizedBox(
+                      //height: 250,
                       width: imageWidth,
                       // The height will be determined by the Row's height, which is constrained by cardMaxHeight.
                       // BoxFit.cover will fill this space.
@@ -226,6 +241,13 @@ class VintageBookCard extends StatelessWidget {
                                 style: smallDetailStyle,
                               ),
                             ),
+                          Row(
+                            children: [
+                              StarRating(onRatingChanged: (value) {}),
+                              const SizedBox(width: 8),
+                              AddToShelfButton(onPressed: () {}),
+                            ],
+                          ),
                           Divider(
                             color: vintageBorderColor.withOpacity(0.6),
                             height: 20,
@@ -271,9 +293,9 @@ class VintageBookCard extends StatelessWidget {
                               adaptations.join('; '),
                               bodyTextStyle.copyWith(fontSize: 18, height: 1.3),
                             ),
-                          const SizedBox(
-                            height: 10,
-                          ), // Some bottom padding within scroll view
+                          const SizedBox(height: 10),
+                          //AddToShelfButton(onPressed: () {}),
+                          // Some bottom padding within scroll view
                         ],
                       ),
                     ),
@@ -371,6 +393,13 @@ class VintageBookCard extends StatelessWidget {
                                   style: smallDetailStyle,
                                 ),
                               ),
+                            Row(
+                              children: [
+                                StarRating(onRatingChanged: (value) {}),
+                                const SizedBox(width: 8),
+                                AddToShelfButton(onPressed: () {}),
+                              ],
+                            ),
                             Divider(
                               color: vintageBorderColor.withOpacity(0.6),
                               height: 20,
@@ -430,9 +459,8 @@ class VintageBookCard extends StatelessWidget {
                                   height: 1.3,
                                 ),
                               ),
-                            const SizedBox(
-                              height: 10,
-                            ), // Some bottom padding within scroll view
+                            const SizedBox(height: 10),
+                            // Some bottom padding within scroll view
                           ],
                         ),
                       ),
