@@ -38,7 +38,7 @@ class trendingBook extends StatelessWidget {
           // Desktop View - Horizontal Scroll
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: 8,
+            itemCount: 15,
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () {
