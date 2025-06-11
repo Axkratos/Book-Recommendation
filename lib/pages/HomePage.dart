@@ -46,32 +46,46 @@ class Homepage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Container(
                       height: 40,
-                      child: TextField(
-                        style: GoogleFonts.literata(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search books, authors, genres...',
-                          hintStyle: GoogleFonts.literata(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[700],
-                          ),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.8),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 15),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25.0),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (value) {
-                          print('Search query: $value');
+                      // Wrap TextField with GestureDetector for tap action
+                      child: GestureDetector(
+                        onTap: () {
+                          // Navigate to the new search results page
+                          // Using a standard Navigator Push for simplicity.
+                          // Or use context.go('/search') if you prefer go_router
+                          context.go('/search');
+
+                          // If using GoRouter, uncomment this and set up the route:
+                          // context.go('/search-results');
                         },
+                        child: AbsorbPointer(
+                          // Prevents keyboard from appearing
+                          child: TextField(
+                            style: GoogleFonts.literata(
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Search books, authors, genres...',
+                              hintStyle: GoogleFonts.literata(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.grey[700],
+                              ),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(25.0),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

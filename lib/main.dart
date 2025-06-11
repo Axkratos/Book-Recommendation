@@ -8,6 +8,7 @@ import 'package:bookrec/pages/dashboard_shelf.dart';
 import 'package:bookrec/pages/dashboard_discussion.dart';
 import 'package:bookrec/pages/dashboard_trending.dart';
 import 'package:bookrec/pages/mood.dart';
+import 'package:bookrec/pages/searchPage.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
 import 'package:bookrec/pages/write_review.dart';
@@ -36,14 +37,23 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
+        GoRoute(
+          path: '/search',
+          builder: (context, state) {
+            // You can pass query parameters if needed
+            //final query = state.queryParameters['query'] ?? '';
+            //print('Search Query: $query');
+            return SearchResultsPage();
+          },
+        ),
 
         GoRoute(
           path: '/book/:id/:title',
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             final title = state.pathParameters['title']!;
-            final decodedTitle = Uri.decodeComponent(title);
-            print('Book ID: $id, Title: $decodedTitle');
+            //final decodedTitle = Uri.decodeComponent(title);
+            print('Book ID: $id, Title: $title');
 
             return BookAndSimilar(bookId: id, title: title);
           },
