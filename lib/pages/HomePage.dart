@@ -49,7 +49,7 @@ class Homepage extends StatelessWidget {
                       // Wrap TextField with GestureDetector for tap action
                       child: TextField(
                         onSubmitted: (value) {
-                          context.push('/search/$value');
+                          context.go('/search/$value');
                         },
                         style: GoogleFonts.literata(
                           fontSize: 16,

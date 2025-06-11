@@ -22,6 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (location.startsWith('dashboard/home')) return 0;
     if (location.startsWith('/dashboard/shelf')) return 1;
     if (location.startsWith('/dashboard/discussion')) return 2;
+    if (location.startsWith('/dashboard/trending')) return 3;
     return 0; // default fallback
   }
 
@@ -76,7 +77,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   break; // Trending
                 case 4:
                   ProviderUser.logout(); // Logout
-                  context.go('/home'); // Redirect to sign-in page
+                  context.go('/'); // Redirect to sign-in page
                   break;
 
                 // Trending

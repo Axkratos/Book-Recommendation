@@ -164,12 +164,10 @@ class BooksInfo {
         'Authorization': ' Bearer $token',
       },
     );
-    print('Similar Book title123: $title');
-    print('Similar Book URL: $url');
 
     if (response.statusCode == 200) {
       Map data = jsonDecode(response.body);
-      print('Similar Books fetched successfully: ${response.body}');
+      //print('Similar Books fetched successfully: ${response.body}');
 
       return List<Map<String, dynamic>>.from(data['data']);
     } else {
@@ -204,7 +202,6 @@ class BooksInfo {
       throw Exception('Failed to load books');
     }
   }
-  
 
   Future<List<Book>> fetchBooksUser(String token) async {
     final url = Uri.parse('${baseUrl}/api/v1/books/recommend/user');

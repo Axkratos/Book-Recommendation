@@ -267,7 +267,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                 return GridView.builder(
                   padding: const EdgeInsets.all(16.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
+                    crossAxisCount: 3,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
                     childAspectRatio: 3.5,

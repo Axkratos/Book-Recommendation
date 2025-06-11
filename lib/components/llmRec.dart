@@ -128,7 +128,17 @@ class _AIPromptSectionState extends State<AIPromptSection> {
 
                   // Simple validation: don't navigate if the prompt is empty.
                   if (prompt.trim().isNotEmpty) {
-                    context.push('dahboard/home/book/$prompt');
+                    context.go('/dashboard/home/book/$prompt');
+
+                    /*
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        // We are creating a new page and passing the prompt to it
+                        builder:
+                            (context) => BookSearchResultsPage(prompt: prompt),
+                      ),
+                    );*/
                   } else {
                     // Optional: Show a little feedback message if the field is empty
                     ScaffoldMessenger.of(context).showSnackBar(
