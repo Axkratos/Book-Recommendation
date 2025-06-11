@@ -1,3 +1,4 @@
+import 'package:bookrec/components/book_grid.dart';
 import 'package:bookrec/components/star.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/pages/HomePage.dart';
@@ -37,6 +38,7 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
+
         GoRoute(
           path: '/search',
           builder: (context, state) {
@@ -72,6 +74,18 @@ final GoRouter _router = GoRouter(
               path: '/dashboard/shelf',
               builder: (context, state) => const DashboardShelf(),
             ),
+            GoRoute(
+              path: '/book/:prompt',
+              builder: (context, state) {
+                //final id = state.pathParameters['id']!;
+                final prompt = state.pathParameters['prompt']!;
+                //final decodedTitle = Uri.decodeComponent(title);
+                //print('Book ID: $id, Title: $title');
+
+                return BookSearchResultsPage(prompt: prompt);
+              },
+            ),
+
             GoRoute(
               path: '/dashboard/discussion',
               builder: (context, state) => DiscussionPage(),

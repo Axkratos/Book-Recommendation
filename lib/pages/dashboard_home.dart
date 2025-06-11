@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bookrec/components/VintageButton.dart';
 import 'package:bookrec/components/chat_ai.dart';
+import 'package:bookrec/components/llmRec.dart';
 import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
@@ -32,10 +33,13 @@ class DashboardHome extends StatelessWidget {
                 flex: 3,
                 child: ListView(
                   children: [
+                    Container(height: 250, child: AIPromptSection()),
+                    SizedBox(height: screenHeight * 0.04),
                     Container(
-                      height: MediaQuery.of(context).size.height * 0.04,
+                      height: MediaQuery.of(context).size.height * 0.05,
                       child: dashboard_title(title: 'Recommended Books'),
                     ),
+
                     SizedBox(height: 20),
                     Text(
                       'Here are some books we think you will love based on your past reads,preferences, and interests.',
@@ -45,7 +49,7 @@ class DashboardHome extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 20),
-                    book_card_section(),
+                    book_card_section(type: 'item'),
 
                     SizedBox(height: screenHeight * 0.04),
                     Text(
@@ -56,7 +60,8 @@ class DashboardHome extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 20),
-                    book_card_section(),
+                    book_card_section(type: 'user'),
+                    SizedBox(height: screenHeight * 0.04),
                   ],
                 ),
               ),
@@ -70,7 +75,9 @@ class DashboardHome extends StatelessWidget {
 }
 
 class book_card_section extends StatelessWidget {
-  const book_card_section({super.key});
+  const book_card_section({super.key, required this.type});
+
+  final String type; // This can be 'recommended' or 'similar'
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +85,10 @@ class book_card_section extends StatelessWidget {
     //final String token = ProviderUser.token;
 
     return FutureBuilder<List<Book>>(
-      future: BooksInfo().fetchBooks(ProviderUser.token),
+      future:
+          type == 'item'
+              ? BooksInfo().fetchBooks(ProviderUser.token)
+              : BooksInfo().fetchBooksUser(ProviderUser.token),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

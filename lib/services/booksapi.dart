@@ -179,8 +179,33 @@ class BooksInfo {
     }
   }
 
+  /// Fetches a list of books from the recommend/item.
   Future<List<Book>> fetchBooks(String token) async {
     final url = Uri.parse('${baseUrl}/api/v1/books/recommend/item');
+    final http.Response response = await http.get(
+      url,
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': ' Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List booksJson = data['data'];
+      //print('Books fetched successfully: ${response.body}');
+      for (var book in booksJson) {
+        print('Book JSON: $book');
+      }
+      return booksJson.map((json) => Book.fromJson(json)).toList();
+    } else {
+      print('Error fetching books: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      throw Exception('Failed to load books');
+    }
+  }
+  Future<List<Book>> fetchBooksUser(String token) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/recommend/user');
     final http.Response response = await http.get(
       url,
       headers: {
