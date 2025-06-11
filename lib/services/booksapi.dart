@@ -204,6 +204,8 @@ class BooksInfo {
       throw Exception('Failed to load books');
     }
   }
+  
+
   Future<List<Book>> fetchBooksUser(String token) async {
     final url = Uri.parse('${baseUrl}/api/v1/books/recommend/user');
     final http.Response response = await http.get(
