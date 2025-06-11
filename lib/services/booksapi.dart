@@ -171,7 +171,7 @@ class BooksInfo {
       Map data = jsonDecode(response.body);
       print('Similar Books fetched successfully: ${response.body}');
 
-      return data['data'];
+      return List<Map<String, dynamic>>.from(data['data']);
     } else {
       print('Error fetching similar books: ${response.statusCode}');
       print('Similar Books Response body: ${response.body}');
