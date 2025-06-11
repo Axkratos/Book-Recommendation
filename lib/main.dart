@@ -3,13 +3,13 @@ import 'package:bookrec/components/star.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/pages/HomePage.dart';
 import 'package:bookrec/pages/book_and_similar.dart';
+import 'package:bookrec/pages/book_search.dart';
 import 'package:bookrec/pages/dashboard.dart';
 import 'package:bookrec/pages/dashboard_home.dart';
 import 'package:bookrec/pages/dashboard_shelf.dart';
 import 'package:bookrec/pages/dashboard_discussion.dart';
 import 'package:bookrec/pages/dashboard_trending.dart';
 import 'package:bookrec/pages/mood.dart';
-import 'package:bookrec/pages/searchPage.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
 import 'package:bookrec/pages/write_review.dart';
@@ -40,16 +40,6 @@ final GoRouter _router = GoRouter(
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
 
         GoRoute(
-          path: '/search',
-          builder: (context, state) {
-            // You can pass query parameters if needed
-            //final query = state.queryParameters['query'] ?? '';
-            //print('Search Query: $query');
-            return SearchResultsPage();
-          },
-        ),
-
-        GoRoute(
           path: '/book/:id/:title',
           builder: (context, state) {
             final id = state.pathParameters['id']!;
@@ -58,6 +48,17 @@ final GoRouter _router = GoRouter(
             print('Book ID: $id, Title: $title');
 
             return BookAndSimilar(bookId: id, title: title);
+          },
+        ),
+        GoRoute(
+          path: '/search/:prompt',
+          builder: (context, state) {
+            //final id = state.pathParameters['id']!;
+            final prompt = state.pathParameters['prompt']!;
+            //final decodedTitle = Uri.decodeComponent(title);
+            //print('Book ID: $id, Title: $title');
+
+            return SearchResultsPage(prompt: prompt);
           },
         ),
         GoRoute(path: '/mood', builder: (context, state) => const Mood()),
@@ -69,21 +70,23 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: '/dashboard/home',
               builder: (context, state) => DashboardHome(),
+              routes: [
+                GoRoute(
+                  path: '/book/:prompt',
+                  builder: (context, state) {
+                    //final id = state.pathParameters['id']!;
+                    final prompt = state.pathParameters['prompt']!;
+                    //final decodedTitle = Uri.decodeComponent(title);
+                    //print('Book ID: $id, Title: $title');
+
+                    return BookSearchResultsPage(prompt: prompt);
+                  },
+                ),
+              ],
             ),
             GoRoute(
               path: '/dashboard/shelf',
               builder: (context, state) => const DashboardShelf(),
-            ),
-            GoRoute(
-              path: '/book/:prompt',
-              builder: (context, state) {
-                //final id = state.pathParameters['id']!;
-                final prompt = state.pathParameters['prompt']!;
-                //final decodedTitle = Uri.decodeComponent(title);
-                //print('Book ID: $id, Title: $title');
-
-                return BookSearchResultsPage(prompt: prompt);
-              },
             ),
 
             GoRoute(

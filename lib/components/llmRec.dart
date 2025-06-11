@@ -2,6 +2,7 @@ import 'package:bookrec/components/book_grid.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:bookrec/theme/texts.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 // Assuming you have these constants defined somewhere
 //const vintageCream = Color(0xFFF5F5DC);
@@ -127,14 +128,7 @@ class _AIPromptSectionState extends State<AIPromptSection> {
 
                   // Simple validation: don't navigate if the prompt is empty.
                   if (prompt.trim().isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        // We are creating a new page and passing the prompt to it
-                        builder:
-                            (context) => BookSearchResultsPage(prompt: prompt),
-                      ),
-                    );
+                    context.push('dahboard/home/book/$prompt');
                   } else {
                     // Optional: Show a little feedback message if the field is empty
                     ScaffoldMessenger.of(context).showSnackBar(
