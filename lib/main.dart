@@ -9,9 +9,12 @@ import 'package:bookrec/pages/dashboard_home.dart';
 import 'package:bookrec/pages/dashboard_shelf.dart';
 import 'package:bookrec/pages/dashboard_discussion.dart';
 import 'package:bookrec/pages/dashboard_trending.dart';
+import 'package:bookrec/pages/isLoading.dart';
+import 'package:bookrec/pages/likeBook.dart';
 import 'package:bookrec/pages/mood.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
+import 'package:bookrec/pages/verifyEmail.dart';
 import 'package:bookrec/pages/write_review.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/provider/catprovider.dart';
@@ -38,6 +41,10 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
+        GoRoute(
+          path: '/like',
+          builder: (context, state) => BookSelectionPage(),
+        ),
 
         GoRoute(
           path: '/writereview/:id/:title',
@@ -63,6 +70,16 @@ final GoRouter _router = GoRouter(
           },
         ),
         GoRoute(
+          path: '/verify-email/:token',
+          builder: (context, state) {
+            //final id = state.pathParameters['id']!;
+            final token = state.pathParameters['token']!;
+            //final decodedTitle = Uri.decodeComponent(title);
+            //print('Book ID: $id, Title: $title');
+            return Isloading(token: token);
+          },
+        ),
+        GoRoute(
           path: '/search/:prompt',
           builder: (context, state) {
             //final id = state.pathParameters['id']!;
@@ -73,6 +90,7 @@ final GoRouter _router = GoRouter(
             return SearchResultsPage(prompt: prompt);
           },
         ),
+
         GoRoute(path: '/mood', builder: (context, state) => const Mood()),
         ShellRoute(
           builder: (BuildContext context, GoRouterState state, Widget child) {
@@ -121,6 +139,12 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: 'signup',
           builder: (context, state) => const SignUpPage(),
+          routes: [
+            GoRoute(
+              path: 'verify',
+              builder: (context, state) => EmailVerificationPage(),
+            ),
+          ],
         ),
       ],
     ),
