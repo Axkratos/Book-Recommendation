@@ -15,6 +15,7 @@ import 'package:bookrec/pages/mood.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
 import 'package:bookrec/pages/verifyEmail.dart';
+import 'package:bookrec/pages/view_discussion.dart';
 import 'package:bookrec/pages/write_review.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/provider/catprovider.dart';
@@ -44,6 +45,13 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/like',
           builder: (context, state) => BookSelectionPage(),
+        ),
+        GoRoute(
+          path: '/view/:id',
+          builder: (context, state) {
+            final forumId = state.pathParameters['id'];
+            return ForumDetailPage(forumId: forumId!);
+          },
         ),
 
         GoRoute(

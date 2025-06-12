@@ -123,32 +123,35 @@ class _DiscussionPageState extends State<DiscussionPage> {
                             final forum = _forums[index];
                             final content = safeDecode(forum.discussionBody);
 
-                            return VintageFeedCard(
-                              reviewData: {
-                                'id': forum.id ?? 'Unknown ID',
-                                'title': forum.discussionTitle ?? 'No Title',
-                                'book': forum.bookTitle ?? 'Unknown Book',
-                                'author': forum.userId ?? 'Unknown Author',
-                                'cover':
-                                    'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+                            return GestureDetector(
+                              onTap: () => context.go('/view/${forum.id}'),
+                              child: VintageFeedCard(
+                                reviewData: {
+                                  'id': forum.id ?? 'Unknown ID',
+                                  'title': forum.discussionTitle ?? 'No Title',
+                                  'book': forum.bookTitle ?? 'Unknown Book',
+                                  'author': forum.userId ?? 'Unknown Author',
+                                  'cover':
+                                      'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
 
-                                'content': content,
-                                'upvotes': forum.likeCount.toString(),
-                                'comments': '900',
-                                'timeAgo':
-                                    forum.createdAt != null
-                                        ? DateTime.now()
-                                                .difference(
-                                                  DateTime.parse(
-                                                    forum.createdAt!,
-                                                  ),
-                                                )
-                                                .inDays
-                                                .toString() +
-                                            ' days ago'
-                                        : 'Unknown time',
-                                'reason': 'Recommended for you',
-                              },
+                                  'content': content,
+                                  'upvotes': forum.likeCount.toString(),
+                                  'comments': '900',
+                                  'timeAgo':
+                                      forum.createdAt != null
+                                          ? DateTime.now()
+                                                  .difference(
+                                                    DateTime.parse(
+                                                      forum.createdAt!,
+                                                    ),
+                                                  )
+                                                  .inDays
+                                                  .toString() +
+                                              ' days ago'
+                                          : 'Unknown time',
+                                  'reason': 'Recommended for you',
+                                },
+                              ),
                             );
                           },
                         ),
