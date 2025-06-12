@@ -38,7 +38,7 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
 
   @override
   Widget build(BuildContext context) {
-    final String bookTitle = widget.reviewData['book'] ?? 'Unknown Book';
+    final String bookTitle = widget.reviewData['bookTitle'] ?? 'Unknown Book';
     final String coverUrl = widget.reviewData['cover'] ?? '';
     final String postTitle = widget.reviewData['title'] ?? 'No Title';
     final String timeAgo = widget.reviewData['timeAgo'] ?? '';

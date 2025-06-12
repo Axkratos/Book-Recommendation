@@ -148,9 +148,10 @@ class _WriteReviewState extends State<WriteReview> {
                           VintageButton(
                             text: 'Submit',
                             onPressed: () async {
+                              /*
                               final String json = jsonEncode(
                                 _quillController.document.toDelta().toJson(),
-                              );
+                              );*/
                               final response = await discuss.createDiscussion(
                                 token:
                                     ProviderUser
@@ -159,8 +160,13 @@ class _WriteReviewState extends State<WriteReview> {
                                 bookTitle: widget.title,
                                 discussionTitle:
                                     titleController
-                                        .toString(), // Replace with actual title
-                                discussionBody: json,
+                                        .text, // Replace with actual title
+                                discussionBody: jsonEncode(
+                                  _quillController.document
+                                      .toDelta()
+                                      .toJson()
+                                      .toString(),
+                                ),
                               );
                               if (await response) {
                                 ScaffoldMessenger.of(context).showSnackBar(
