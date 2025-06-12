@@ -8,9 +8,13 @@ class VintageTextFormField extends StatelessWidget {
     required this.icon,
     required this.hintText,
     this.onChanged,
+    this.enable = true,
+    this.controller,
   });
+  final bool enable;
   final IconData icon;
   final String hintText;
+  final TextEditingController? controller;
 
   final double screenWidth;
   final Function(String)? onChanged;
@@ -20,6 +24,8 @@ class VintageTextFormField extends StatelessWidget {
     return Container(
       width: screenWidth * 0.2,
       child: TextFormField(
+        controller: controller,
+        enabled: enable,
         style: GoogleFonts.literata(fontSize: 16, color: Colors.black87),
         decoration: InputDecoration(
           hintText: hintText,

@@ -40,6 +40,18 @@ final GoRouter _router = GoRouter(
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
 
         GoRoute(
+          path: '/writereview/:id/:title',
+
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            final title = state.pathParameters['title']!;
+            //final decodedTitle = Uri.decodeComponent(title);
+            print('Book ID: $id, Title: $title');
+            return WriteReview(bookId: id, title: title);
+          },
+        ),
+
+        GoRoute(
           path: '/book/:id/:title',
           builder: (context, state) {
             final id = state.pathParameters['id']!;
@@ -92,12 +104,7 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: '/dashboard/discussion',
               builder: (context, state) => DiscussionPage(),
-              routes: [
-                GoRoute(
-                  path: 'writereview',
-                  builder: (context, state) => WriteReview(),
-                ),
-              ],
+              routes: [],
             ),
             GoRoute(
               path: '/dashboard/trending',

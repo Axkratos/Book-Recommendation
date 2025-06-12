@@ -283,7 +283,11 @@ class _DashboardShelfState extends State<DashboardShelf> {
                                       screenWidth: screenWidth,
                                       book: book,
                                       widget: TextButton(
-                                        onPressed: () {},
+                                        onPressed: () {
+                                          context.go(
+                                            '/writereview/${book['isbn10']}/${book['title']}',
+                                          );
+                                        },
                                         child: Text(
                                           'Write Review',
                                           style: vintageLabelStyle,
