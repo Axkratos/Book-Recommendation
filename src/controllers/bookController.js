@@ -822,3 +822,33 @@ export const getUserBasedRecommendations = async (req, res) => {
     return res.status(500).json({ status: 'error', message: err.message });
   }
 };
+
+export const getRandomUnratedBooks = async (req, res) => {
+  try {
+    const userId = req.user.id; // assuming you have user ID on req.user
+
+    // 1. Find all ISBNs this user has rated
+    const ratedISBNs = await Rating.find({ 'User-ID': userId })
+      .distinct('ISBN');
+
+    // 2. Aggregate on Book to exclude those ISBNs and pick a random sample
+    const randomBooks = await Book.aggregate([
+      { $match: { _id: { $nin: ratedISBNs } } },
+      { $sample: { size: 20 } }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      results: randomBooks.length,
+      data: {
+        books: randomBooks
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching random unrated books:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while fetching books.'
+    });
+  }
+};

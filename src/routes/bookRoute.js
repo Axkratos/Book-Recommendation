@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
-import { likeBooks,getLLMRecommendations,getTrendingBooks,addRating ,getItemBasedRecommendations,getUserBasedRecommendations,getItemBasedRecommendationsByTitle,getRating,checkBookSelected} from '../controllers/bookController.js';
+import { likeBooks,getLLMRecommendations,getTrendingBooks,addRating ,getItemBasedRecommendations,getUserBasedRecommendations,getItemBasedRecommendationsByTitle,getRating,checkBookSelected,getRandomUnratedBooks} from '../controllers/bookController.js';
 import { addBookToShelf,getShelfBooks,removeBookFromShelf,checkBookInShelf } from '../controllers/shelfController.js';
 import { createForum,deleteForum,toggleLikeForum,hasLikedForum,updateForum ,getUserForums} from '../controllers/forumController.js';
 import { createComment,getCommentsByForum,getCommentsByUser,hasUserCommented,updateComment,deleteComment } from '../controllers/commentController.js';
@@ -67,5 +67,8 @@ router.get('/comment/user/:userId', getCommentsByUser);
 router.get('/comment/has/:forumId', hasUserCommented);
 router.patch('/comment/:id', updateComment);
 router.delete('/comment/:id', deleteComment);
+
+//get random unrated books
+router.get('/random/unrated', getRandomUnratedBooks);
 
 export default router;
