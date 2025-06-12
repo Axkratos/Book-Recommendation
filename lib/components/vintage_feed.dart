@@ -1,13 +1,18 @@
-import 'package:bookrec/dummy/reviews.dart';
-import 'package:bookrec/theme/color.dart';
+import 'dart:convert';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-// Define the missing color if not imported from theme/color.dart
 const Color vintagePrimaryText = Color(0xFF5D4037);
 const Color vintageBackground = Color(0xFFF5EFE6);
 const Color vintageCardBackground = Colors.white;
+const Color vintageSecondaryText = Colors.brown;
+const Color vintageIconColor = Colors.brown;
+const Color vintageAccent = Colors.orange;
 
 class VintageFeedCard extends StatefulWidget {
   final Map<String, dynamic> reviewData;
@@ -19,7 +24,12 @@ class VintageFeedCard extends StatefulWidget {
 }
 
 class _VintageFeedCardState extends State<VintageFeedCard> {
+  final String baseUrl = dotenv.env['baseUrl']!;
+
   late quill.QuillController _quillController;
+  bool _isLiked = false;
+  int _likeCount = 0;
+  bool _isLiking = false;
 
   @override
   void initState() {
@@ -28,6 +38,67 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
       document: quill.Document.fromJson(widget.reviewData['content']),
       selection: const TextSelection.collapsed(offset: 0),
     );
+    _likeCount =
+        int.tryParse(widget.reviewData['upvotes'].replaceAll('K', '000')) ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final providerUser = Provider.of<UserProvider>(context, listen: false);
+      setState(() {
+        _fetchLikeStatus(providerUser.token);
+      });
+    });
+  }
+
+  Future<void> _fetchLikeStatus(String token) async {
+    final String forumId = widget.reviewData['id'] ?? '';
+    final String apiUrl = '${baseUrl}/api/v1/books/forum/like/status/$forumId';
+
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'content-type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isLiked = data['liked'] ?? false;
+          _likeCount = data['likeCount'] ?? _likeCount;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching like status: $e');
+    }
+  }
+
+  Future<void> _toggleLike(String token) async {
+    if (_isLiking) return; // Prevent spamming
+    setState(() => _isLiking = true);
+
+    final String forumId = widget.reviewData['id'] ?? '';
+    final String apiUrl = '${baseUrl}/api/v1/books/forum/like/$forumId';
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'content-type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isLiked = data['liked'];
+          _likeCount = data['likeCount'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error toggling like: $e');
+    } finally {
+      setState(() => _isLiking = false);
+    }
   }
 
   @override
@@ -38,15 +109,12 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
 
   @override
   Widget build(BuildContext context) {
-    final String bookTitle = widget.reviewData['bookTitle'] ?? 'Unknown Book';
+    final String bookTitle = widget.reviewData['book'] ?? 'Unknown Book';
     final String coverUrl = widget.reviewData['cover'] ?? '';
     final String postTitle = widget.reviewData['title'] ?? 'No Title';
     final String timeAgo = widget.reviewData['timeAgo'] ?? '';
     final String reason = widget.reviewData['reason'] ?? '';
-    final String upvotes = widget.reviewData['upvotes'] ?? '0';
-    final String commentsCount = widget.reviewData['comment'] ?? '0';
-    // const Color vintageCardBackground = Colors.white;
-    const Color vintagePrimaryText = Color(0xFF5D4037);
+    final String commentsCount = widget.reviewData['comments'] ?? '0';
 
     return Card(
       elevation: 2.0,
@@ -69,18 +137,9 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
               ),
             ),
             const SizedBox(height: 8),
-            // The original screenshot shows a URL for the article,
-            // we don't have that in your data, so I'll skip it.
-            // If you had one, it would go here:
-            // Text(
-            //   "https://www.reuters.com/...",
-            //   style: GoogleFonts.montserrat(color: vintageAccent, fontSize: 12),
-            //   overflow: TextOverflow.ellipsis,
-            // ),
-            // const SizedBox(height: 8),
             _buildQuillContent(),
             const SizedBox(height: 12),
-            _buildActionBar(upvotes, commentsCount),
+            _buildActionBar(commentsCount),
           ],
         ),
       ),
@@ -95,12 +154,11 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
   ) {
     return Row(
       children: [
-        // Book Cover
         SizedBox(
-          width: 30, // Adjusted size to be smaller, like subreddit icon
+          width: 30,
           height: 30,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4.0), // Slightly rounded
+            borderRadius: BorderRadius.circular(4.0),
             child: Image.network(
               coverUrl,
               fit: BoxFit.cover,
@@ -115,13 +173,12 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
           ),
         ),
         const SizedBox(width: 8),
-        // Book Title and Metadata
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                bookTitle, // Changed from r/worldnews
+                bookTitle,
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -141,11 +198,8 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
           ),
         ),
         const SizedBox(width: 8),
-        // Join Button
         ElevatedButton(
-          onPressed: () {
-            // Join action
-          },
+          onPressed: () {},
           style: ElevatedButton.styleFrom(
             backgroundColor: vintageAccent,
             foregroundColor: Colors.white,
@@ -161,7 +215,6 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
           ),
           child: const Text('Join'),
         ),
-        // More Options
         SizedBox(
           width: 30,
           child: IconButton(
@@ -169,9 +222,7 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
             iconSize: 20,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            onPressed: () {
-              // More options action
-            },
+            onPressed: () {},
           ),
         ),
       ],
@@ -179,12 +230,8 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
   }
 
   Widget _buildQuillContent() {
-    // To make QuillEditor look like static text, we use Basic variant
-    // and ensure it's read-only and has no toolbar.
-    // We might need to constrain its height or make it scrollable if content is too long.
     return quill.QuillEditor.basic(
       controller: _quillController,
-
       config: quill.QuillEditorConfig(
         showCursor: false,
         customStyles: quill.DefaultStyles(
@@ -199,31 +246,24 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
             quill.VerticalSpacing.zero,
             null,
           ),
-          bold: GoogleFonts.merriweather(fontWeight: FontWeight.bold),
-          italic: GoogleFonts.merriweather(fontStyle: FontStyle.italic),
-          underline: GoogleFonts.merriweather(
-            decoration: TextDecoration.underline,
-          ),
-          // You can customize h1, h2, h3, link, etc. if your delta uses them
         ),
-        //embedBuilders: quill.FlutterQuillEmbeds.editorBuilders(),
-        scrollable:
-            false, // Important for it to take natural height in a Column
+        scrollable: false,
       ),
     );
   }
 
-  Widget _buildActionBar(String upvotes, String commentsCount) {
+  Widget _buildActionBar(String commentsCount) {
+    final ProviderUser = Provider.of<UserProvider>(context);
+
     return Row(
       children: [
-        _actionButton(Icons.arrow_upward_outlined, upvotes, () {}),
-        const SizedBox(width: 4),
         _actionButton(
-          Icons.arrow_downward_outlined,
-          null,
-          () {},
-          iconSize: 20,
-        ), // No count for downvote usually
+          _isLiked ? Icons.favorite : Icons.favorite_border,
+          _likeCount.toString(),
+          () => _toggleLike(ProviderUser.token),
+        ),
+        const SizedBox(width: 4),
+        _actionButton(Icons.arrow_downward_outlined, null, () {}, iconSize: 20),
         const SizedBox(width: 12),
         _actionButton(Icons.mode_comment_outlined, commentsCount, () {}),
         const SizedBox(width: 12),
@@ -232,11 +272,9 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
           'Save',
           () {},
           isSave: true,
-        ), // 'Save' instead of generic 'Share' icon
+        ),
         const SizedBox(width: 12),
         _actionButton(Icons.share_outlined, 'Share', () {}),
-        // The original has a gift icon too, we can add it if needed.
-        // _actionButton(Icons.card_giftcard_outlined, 'Award', () {}),
       ],
     );
   }
@@ -273,36 +311,6 @@ class _VintageFeedCardState extends State<VintageFeedCard> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// --- EXAMPLE USAGE ---
-class FeedScreen extends StatelessWidget {
-  const FeedScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: vintageBackground,
-      appBar: AppBar(
-        title: Text(
-          'Vintage Book Feed',
-          style: GoogleFonts.playfairDisplay(
-            color: vintagePrimaryText,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: vintageCardBackground,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: vintagePrimaryText),
-      ),
-      body: ListView.builder(
-        itemCount: reviews.length,
-        itemBuilder: (context, index) {
-          return VintageFeedCard(reviewData: reviews[index]);
-        },
       ),
     );
   }

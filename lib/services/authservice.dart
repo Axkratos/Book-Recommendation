@@ -74,7 +74,8 @@ class Authservice {
       print('Response from verifEmail ${responseData.toString()}');
       return {'status': 'success', 'token': responseData['token']};
     } else {
-      print('Error from verifEmail: ${response.statusCode}');      return {
+      print('Error from verifEmail: ${response.statusCode}');     
+       return {
         
         'status': 'failed ${response.statusCode}',
         'message': 'An error occurred. Please try again.',

@@ -125,13 +125,15 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
                             return VintageFeedCard(
                               reviewData: {
+                                'id': forum.id ?? 'Unknown ID',
                                 'title': forum.discussionTitle ?? 'No Title',
                                 'book': forum.bookTitle ?? 'Unknown Book',
-                                'author': 'Unknown Author',
+                                'author': forum.userId ?? 'Unknown Author',
                                 'cover':
-                                    'https://images-na.ssl-images-amazon.com/images/I/91b0C2YNSrL.jpg',
+                                    'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+
                                 'content': content,
-                                'upvotes': '8.5K',
+                                'upvotes': forum.likeCount.toString(),
                                 'comments': '900',
                                 'timeAgo':
                                     forum.createdAt != null
