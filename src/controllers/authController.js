@@ -133,7 +133,7 @@ export const signup = async (req, res) => {
 // Send verification email
 const sendVerificationEmail = async (email, token, fullName) => {
   const transporter = createTransporter();
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+  const verificationUrl = `${process.env.FRONTEND_URL}/#/verify-email/${token}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USERNAME,
