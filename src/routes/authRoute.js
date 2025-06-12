@@ -5,7 +5,9 @@ import {
   refreshToken,
   resetPassword,
   forgotPassword,
-  deleteUser
+  deleteUser,
+  verifyEmail,
+  resendVerificationEmail
  
 } from '../controllers/authController.js';
 
@@ -28,6 +30,12 @@ router.put('/resetpassword', resetPassword);
 
 // Delete User route
 router.post('/deleteuser', deleteUser);
+
+// Verify Email route
+router.get('/verifyemail/:token', verifyEmail);
+
+// Resend Verification Email route
+router.post('/resendverification', resendVerificationEmail);
 
 
 

@@ -9,6 +9,11 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 
+ // Email verification fields
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String },
+  emailVerificationExpires: { type: Date },
+
   liked_books: [{ type: String }], // array of book titles
 
   recommendation: {

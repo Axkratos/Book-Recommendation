@@ -478,6 +478,21 @@ export async function updateTrendingBooks() {
     attempts++;
     console.log(`\n🔄 Attempt ${attempts} of ${maxAttempts}`);
     
+
+    // Phase 2: Enhanced Open Library
+    if (allBooks.length < 45) {
+      console.log('\n📖 Phase 2: Enhanced Open Library');
+      const openLibraryBooks = await fetchOpenLibraryEnhanced();
+      
+      for (const book of openLibraryBooks) {
+        const validatedBook = await validateAndEnrichBook(book);
+        if (validatedBook) {
+          allBooks.push(validatedBook);
+        }
+      }
+      
+      console.log(`✅ Phase 2 complete: ${openLibraryBooks.length} additional books`);
+    }
     // Phase 1: Google Books (most comprehensive)
     if (allBooks.length < 30) {
       console.log('\n📚 Phase 1: Google Books Comprehensive Search');
@@ -493,20 +508,7 @@ export async function updateTrendingBooks() {
       console.log(`✅ Phase 1 complete: ${googleBooks.length} books collected`);
     }
     
-    // Phase 2: Enhanced Open Library
-    if (allBooks.length < 45) {
-      console.log('\n📖 Phase 2: Enhanced Open Library');
-      const openLibraryBooks = await fetchOpenLibraryEnhanced();
-      
-      for (const book of openLibraryBooks) {
-        const validatedBook = await validateAndEnrichBook(book);
-        if (validatedBook) {
-          allBooks.push(validatedBook);
-        }
-      }
-      
-      console.log(`✅ Phase 2 complete: ${openLibraryBooks.length} additional books`);
-    }
+    
     
     // Remove duplicates after each attempt
     allBooks = removeDuplicates(allBooks);

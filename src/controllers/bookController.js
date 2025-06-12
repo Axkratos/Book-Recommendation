@@ -56,7 +56,35 @@ export const likeBooks = async (req, res) => {
   }
 };
 
+export const checkBookSelected = async (req, res) => {
+  const userId = req.user.id;
 
+  try {
+    // Fetch only the liked_books field
+    const user = await User.findById(userId).select('liked_books');
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found.'
+      });
+    }
+
+    const bookSelected = Array.isArray(user.liked_books) && user.liked_books.length > 0;
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        bookSelected
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+};
 // POST /api/recommend
 export const getLLMRecommendations = async (req, res) => {
   const text  = req.body.text; // e.g. "a book where king dies"

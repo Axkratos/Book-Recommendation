@@ -37,17 +37,21 @@ cron.schedule('0 12 * * *', () => {
     updateTrendingBooks();
   });
 
-
+//  updateTrendingBooks();
 
 // importing Routes
 import userRoutes from './routes/userRoute.js'
 import authRoutes from './routes/authRoute.js';
 import bookRoutes from './routes/bookRoute.js';
 
+
+
+
 // Setting the routes
 app.use('/api/v1/users/',userRoutes);
 app.use('/api/v1/auth/',authRoutes);
 app.use('/api/v1/books/',bookRoutes);
+
 
 
 export { app }
