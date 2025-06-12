@@ -35,6 +35,27 @@ router.delete('/forum/:id', deleteForum);
 router.post('/forum/like/:id', toggleLikeForum);
 router.get('/forum/like/status/:id', hasLikedForum);
 
+router.post('/shelf/add', addBookToShelf);
+router.get('/shelf', getShelfBooks);
+router.delete('/shelf/:isbn10', removeBookFromShelf);
+router.get('/shelf/check/:isbn10', checkBookInShelf);
+
+
+//add rating to a book
+router.post('/rating', addRating);
+router.get('/rating/:isbn10', getRating);
+router.get('/recommend/item', getItemBasedRecommendations);
+router.get('/recommend/user', getUserBasedRecommendations);
+router.get('/recommend/item/:title', getItemBasedRecommendationsByTitle);
+
+//forum
+router.post('/forum', createForum);
+router.get('/forum/user', getUserForums);
+router.patch('/forum/:id', updateForum);
+router.delete('/forum/:id', deleteForum);
+router.post('/forum/like/:id', toggleLikeForum);
+router.get('/forum/like/status/:id', hasLikedForum);
+
 //check if book is selected
 router.get('/checkbook', checkBookSelected);
 
