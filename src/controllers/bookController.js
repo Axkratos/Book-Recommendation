@@ -5,7 +5,7 @@ import TrendingBook from '../models/trendingModel.js';
 import Book from '../models/bookModel.js';
 import Rating from '../models/ratingModel.js';
 import NodeCache from 'node-cache';
-
+import Review from '../models/reviewModel.js';
 
 const searchCache = new NodeCache({ stdTTL: 1800 }); // 30 minutes for search results
 const categoryCache = new NodeCache({ stdTTL: 3600 });
@@ -849,6 +849,146 @@ export const getRandomUnratedBooks = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'An error occurred while fetching books.'
+    });
+  }
+};
+
+
+
+export const upsertReview = async (req, res) => {
+  const userId = req.user.id;
+  const { isbn, review } = req.body;
+
+  if (!isbn || !review) {
+    return res.status(400).json({
+      status: 'fail',
+      message: 'Both isbn and review are required.'
+    });
+  }
+
+  try {
+    // Fetch user's name
+    const user = await User.findById(userId).select('fullName');
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found.'
+      });
+    }
+
+    // Upsert the review
+    const updatedReview = await Review.findOneAndUpdate(
+      { user: userId, isbn },
+      {
+        $set: {
+          review,
+          userName: user.fullName
+        }
+      },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true
+      }
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: updatedReview
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+};
+
+
+export const getReviewsByBook = async (req, res) => {
+  const userId = req.user.id;
+  const { isbn } = req.params;
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+
+  try {
+    // 1) Fetch the user's own review (if any)
+    const userReviewDoc = await Review.findOne({ user: userId, isbn })
+      .select('userName review createdAt updatedAt');
+
+    // 2) Fetch other reviews, excluding the user's
+    const otherReviews = await Review.find({ isbn, user: { $ne: userId } })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select('userName review createdAt updatedAt');
+
+    // 3) Build the combined list
+    const reviews = [];
+
+    if (userReviewDoc) {
+      reviews.push({
+        ...userReviewDoc.toObject(),
+        reviewed: true
+      });
+    }
+
+    otherReviews.forEach(doc => {
+      reviews.push({
+        ...doc.toObject(),
+        reviewed: false
+      });
+    });
+
+    // 4) Total count for pagination (only counts others for page calc,
+    //    since user's review is always shown separately)
+    const totalOthers = await Review.countDocuments({ isbn, user: { $ne: userId } });
+    const totalPages = Math.ceil(totalOthers / limit);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        reviews,
+        pagination: {
+          page,
+          limit,
+          totalPages,
+          total: totalOthers + (userReviewDoc ? 1 : 0)
+        }
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+};
+
+
+export const deleteReview = async (req, res) => {
+  const userId = req.user.id;
+  const { isbn } = req.params;
+
+  try {
+    const reviewDoc = await Review.findOne({ user: userId, isbn });
+    if (!reviewDoc) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Review not found or you do not have permission to delete it.'
+      });
+    }
+
+    await reviewDoc.remove();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Review deleted successfully.'
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: err.message
     });
   }
 };
