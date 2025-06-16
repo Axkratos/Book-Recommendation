@@ -87,6 +87,7 @@ class Discussapi {
       return 'failed';
     }
   }
+  
 }
 
 class ForumPageResponse {

@@ -51,36 +51,40 @@ dynamic safeDecode(dynamic body) {
 final discuss = Discussapi();
 
 // Mock API call to fetch comments for a forum post
-Future<List<Comment>> fetchCommentsForForum(String forumId) async {
-  // Simulate network delay
-  await Future.delayed(const Duration(milliseconds: 800));
-  // In a real app, you'd make an HTTP request here using forumId
-  return [
-    Comment(
-      id: 'c1',
-      authorName: 'Eleanor Vance',
-      avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-      content:
-          'A truly insightful point! I had a similar interpretation, especially regarding the protagonist\'s motivations in the third act. It changes how you see the entire narrative.',
-      timeAgo: '2h ago',
-    ),
-    Comment(
-      id: 'c2',
-      authorName: 'Jasper Finch',
-      avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704e',
-      content:
-          'I disagree slightly. I believe the author was aiming for ambiguity. Have you considered the symbolism of the recurring raven motif?',
-      timeAgo: '1h ago',
-    ),
-    Comment(
-      id: 'c3',
-      authorName: 'Seraphina Moon',
-      avatarUrl: 'https://i.pravatar.cc/150?u=a042581f4e29026704f',
-      content:
-          'This discussion is fantastic. Adding this book to my list immediately!',
-      timeAgo: '30m ago',
-    ),
-  ];
+Future<List<Comment>> fetchCommentsForForum(
+  String forumId,
+  String token,
+) async {
+  final String url = '${baseUrl}/api/v1/books/comment/forum/$forumId';
+  print('Fetching comments from: $url');
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    print('Response body: ${response.body}');
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final List<dynamic> data = json['data'];
+      return data.map((item) {
+        return Comment(
+          id: item['_id'],
+          authorName: item['userId']?['fullName'] ?? 'Anonymous',
+          avatarUrl: 'https://i.pravatar.cc/150', // No avatar in response
+          content: item['comment'],
+          timeAgo: timeAgoFromIso(item['createdAt']),
+        );
+      }).toList();
+    } else {
+      throw Exception('Failed to load comments');
+    }
+  } catch (e) {
+    debugPrint('Error fetching comments: $e');
+    return [];
+  }
 }
 
 final String baseUrl = dotenv.env['baseUrl']!;
@@ -190,7 +194,10 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         widget.forumId,
         token,
       ), // Replace with your real API call
-      fetchCommentsForForum(widget.forumId), // Replace with your real API call
+      fetchCommentsForForum(
+        widget.forumId,
+        token,
+      ), // Replace with your real API call
     ]);
 
     _forumData = results[0] as Map<String, dynamic>;
@@ -219,13 +226,15 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     String isbn,
     String forumId,
     String content,
+    String token,
   ) async {
-    final providerUser = Provider.of<UserProvider>(context, listen: false);
+    // You can now use providerUser.token for authenticated requests, e.g.:
+    // await fetchCommentsForForum(widget.forumId); // if you want to use token, modify fetchCommentsForForum to accept token
     return discuss.CreateComment(
       isbn: isbn,
       forumId: forumId,
       commentBody: content,
-      token: providerUser.token,
+      token: token,
     );
   }
 
@@ -282,7 +291,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                               _buildQuillContent(),
                               const SizedBox(height: 30),
                               const VintageDivider(),
-                              _buildCommentInputField(),
+                              _buildCommentInputField(ProviderUser.token),
                               const SizedBox(height: 30),
                               const VintageDivider(),
                               _buildCommentsSection(),
@@ -355,7 +364,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     );
   }
 
-  Widget _buildCommentInputField() {
+  Widget _buildCommentInputField(String token) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Column(
@@ -418,6 +427,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                         '0439785960',
                         widget.forumId,
                         _commentController.text,
+                        token, // Use the token from the provider
                       )
                       .then((response) {
                         print('Comment response: $response');
