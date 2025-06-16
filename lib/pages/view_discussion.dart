@@ -238,6 +238,47 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     );
   }
 
+  Future<bool> deleteComment(String commentId, String token) async {
+    final String url = '$baseUrl/api/v1/books/comment/$commentId';
+    try {
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      print('Delete comment response: ${response.statusCode}');
+      return response.statusCode == 204;
+    } catch (e) {
+      debugPrint('Error deleting comment: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateComment(
+    String commentId,
+    String newContent,
+    String token,
+  ) async {
+    final String url = '$baseUrl/api/v1/books/comment/$commentId';
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'comment': newContent}),
+      );
+      print('Update comment response: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error updating comment: $e');
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ProviderUser = Provider.of<UserProvider>(context);
@@ -509,6 +550,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   }
 
   Widget _buildCommentsSection() {
+    final providerUser = Provider.of<UserProvider>(context, listen: false);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Column(
@@ -523,14 +565,139 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
             ),
           ),
           const SizedBox(height: 20),
-          // Using ListView.separated for dividers between comments
           ListView.separated(
             itemCount: _comments.length,
-            shrinkWrap: true, // Important inside a CustomScrollView
-            physics: const NeverScrollableScrollPhysics(), // Also important
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
               final comment = _comments[index];
-              return CommentWidget(comment: comment);
+              return CommentWidget(
+                comment: comment,
+                onDelete: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder:
+                        (ctx) => AlertDialog(
+                          title: const Text('Delete Comment'),
+                          content: const Text(
+                            'Are you sure you want to delete this comment?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                  );
+                  if (confirm == true) {
+                    final success = await deleteComment(
+                      comment.id,
+                      providerUser.token,
+                    );
+                    if (success) {
+                      setState(() {
+                        _comments.removeAt(index);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: vintagePrimaryText,
+                          content: Text(
+                            'Comment deleted.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.red,
+                          content: Text(
+                            'Failed to delete comment.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                onEdit: () async {
+                  final controller = TextEditingController(
+                    text: comment.content,
+                  );
+                  final updated = await showDialog<String>(
+                    context: context,
+                    builder:
+                        (ctx) => AlertDialog(
+                          title: const Text('Edit Comment'),
+                          content: TextField(
+                            controller: controller,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              hintText: 'Edit your comment...',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed:
+                                  () => Navigator.of(ctx).pop(controller.text),
+                              child: const Text('Update'),
+                            ),
+                          ],
+                        ),
+                  );
+                  if (updated != null &&
+                      updated.trim().isNotEmpty &&
+                      updated != comment.content) {
+                    final success = await updateComment(
+                      comment.id,
+                      updated,
+                      providerUser.token,
+                    );
+                    if (success) {
+                      setState(() {
+                        _comments[index] = Comment(
+                          id: comment.id,
+                          authorName: comment.authorName,
+                          avatarUrl: comment.avatarUrl,
+                          content: updated,
+                          timeAgo: 'just now',
+                        );
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: vintagePrimaryText,
+                          content: Text(
+                            'Comment updated.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.red,
+                          content: Text(
+                            'Failed to update comment.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              );
             },
             separatorBuilder:
                 (context, index) => const Padding(
@@ -547,7 +714,14 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 // A dedicated widget for a single comment
 class CommentWidget extends StatelessWidget {
   final Comment comment;
-  const CommentWidget({Key? key, required this.comment}) : super(key: key);
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
+  const CommentWidget({
+    Key? key,
+    required this.comment,
+    this.onDelete,
+    this.onEdit,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -581,6 +755,27 @@ class CommentWidget extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
+                  const Spacer(),
+                  if (onEdit != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.blueGrey,
+                        size: 20,
+                      ),
+                      tooltip: 'Edit',
+                      onPressed: onEdit,
+                    ),
+                  if (onDelete != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      tooltip: 'Delete',
+                      onPressed: onDelete,
+                    ),
                 ],
               ),
               const SizedBox(height: 6),
