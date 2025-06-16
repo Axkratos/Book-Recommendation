@@ -79,6 +79,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   ProviderUser.logout(); // Logout
                   context.go('/'); // Redirect to sign-in page
                   break;
+                case 5:
+                  context.go('/reader'); // Trending
+                  break; // Trending
 
                 // Trending
               }
@@ -188,6 +191,11 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: FontAwesomeIcons.rightFromBracket,
                     tooltip: "Logout",
                     index: 4,
+                  ),
+                  _buildMenuItem(
+                    icon: FontAwesomeIcons.readme,
+                    tooltip: "Reader",
+                    index: 5,
                   ),
                 ],
               ),
