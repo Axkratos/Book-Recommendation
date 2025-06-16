@@ -161,12 +161,12 @@ class _WriteReviewState extends State<WriteReview> {
                                 discussionTitle:
                                     titleController
                                         .text, // Replace with actual title
-                                discussionBody: jsonEncode(
-                                  _quillController.document
-                                      .toDelta()
-                                      .toJson()
-                                      .toString(),
-                                ),
+                                discussionBody:
+                                    jsonEncode(
+                                      _quillController.document
+                                          .toDelta()
+                                          .toJson(),
+                                    ).toString(),
                               );
                               if (await response) {
                                 ScaffoldMessenger.of(context).showSnackBar(

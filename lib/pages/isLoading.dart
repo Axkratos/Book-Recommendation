@@ -1,8 +1,11 @@
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:provider/provider.dart';
 
 class Isloading extends StatefulWidget {
   const Isloading({super.key, this.token});
@@ -27,6 +30,9 @@ class _IsloadingState extends State<Isloading> {
 
     if (result['status'] == 'success') {
       // Delay a bit so the user sees the loading for a moment
+      if (!mounted) return;
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      userProvider.setToken = (result['token'] ?? '');
       await Future.delayed(Duration(seconds: 1));
       if (!mounted) return;
       context.go('/like');

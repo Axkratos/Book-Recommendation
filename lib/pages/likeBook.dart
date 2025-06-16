@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:bookrec/provider/authprovider.dart';
 
 // A simple data model for a book
 class Book {
-  final int id;
+  final String id;
   final String title;
   final String author;
   final String coverUrl;
@@ -13,6 +19,15 @@ class Book {
     required this.author,
     required this.coverUrl,
   });
+
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      id: json['_id'] ?? '',
+      title: json['title'] ?? '',
+      author: json['authors'] ?? '',
+      coverUrl: json['thumbnail'] ?? '',
+    );
+  }
 }
 
 class BookSelectionPage extends StatefulWidget {
@@ -24,22 +39,38 @@ class BookSelectionPage extends StatefulWidget {
 
 class _BookSelectionPageState extends State<BookSelectionPage> {
   final int _minSelectionCount = 10;
-  final Set<int> _selectedBookIds = {};
+  final Set<String> _selectedBookIds = {};
+  late Future<List<Book>> _booksFuture;
 
-  // Generate a list of 30 dummy books
-  final List<Book> _books = List.generate(
-    30,
-    (index) => Book(
-      id: index,
-      title: 'Classic Tale ${index + 1}',
-      author: 'Author ${index + 1}',
-      // Using picsum.photos with a grayscale filter for a vintage feel
-      // The seed ensures we get the same image for the same book every time
-      coverUrl: 'https://picsum.photos/seed/${index + 10}/200/300?grayscale',
-    ),
-  );
+  @override
+  void initState() {
+    super.initState();
+    _booksFuture = fetchBooks();
+  }
 
-  void _toggleBookSelection(int bookId) {
+  Future<List<Book>> fetchBooks() async {
+    final String baseUrl = dotenv.env['baseUrl']!;
+    final String token =
+        Provider.of<UserProvider>(context, listen: false).token;
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/books/random/unrated'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    print('Response status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List booksJson = data['data']['books'];
+      return booksJson.map((json) => Book.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load books');
+    }
+  }
+
+  void _toggleBookSelection(String bookId) {
     setState(() {
       if (_selectedBookIds.contains(bookId)) {
         _selectedBookIds.remove(bookId);
@@ -51,6 +82,43 @@ class _BookSelectionPageState extends State<BookSelectionPage> {
 
   bool get _isSelectionComplete =>
       _selectedBookIds.length >= _minSelectionCount;
+
+  Future<void> likeBooks() async {
+    final String baseUrl = dotenv.env['baseUrl']!;
+    final String token =
+        Provider.of<UserProvider>(context, listen: false).token;
+
+    // Get the selected book titles
+    final books = await _booksFuture;
+    final likedBooks =
+        books
+            .where((book) => _selectedBookIds.contains(book.id))
+            .map((book) => book.title)
+            .toList();
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/v1/books/like'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'liked_books': likedBooks}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Liked books response: $data');
+      // You can show a success message or navigate to another page here
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Books liked successfully!')),
+      );
+    } else {
+      print('Failed to like books: ${response.body}');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to like books')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,32 +136,41 @@ class _BookSelectionPageState extends State<BookSelectionPage> {
               ).textTheme.headlineMedium?.copyWith(fontSize: 24),
             ),
           ),
-
           // Responsive Book Grid
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              // This is the key to responsiveness!
-              // It creates as many columns as can fit, with each column having a max width.
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200, // Max width for each grid item
-                childAspectRatio: 2 / 3, // Aspect ratio for book covers
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
-              ),
-              itemCount: _books.length,
-              itemBuilder: (context, index) {
-                final book = _books[index];
-                final isSelected = _selectedBookIds.contains(book.id);
-                return BookGridItem(
-                  book: book,
-                  isSelected: isSelected,
-                  onTap: () => _toggleBookSelection(book.id),
+            child: FutureBuilder<List<Book>>(
+              future: _booksFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No books found.'));
+                }
+                final books = snapshot.data!;
+                return GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 200,
+                    childAspectRatio: 2 / 3,
+                    crossAxisSpacing: 20,
+                    mainAxisSpacing: 20,
+                  ),
+                  itemCount: books.length,
+                  itemBuilder: (context, index) {
+                    final book = books[index];
+                    final isSelected = _selectedBookIds.contains(book.id);
+                    return BookGridItem(
+                      book: book,
+                      isSelected: isSelected,
+                      onTap: () => _toggleBookSelection(book.id),
+                    );
+                  },
                 );
               },
             ),
           ),
-
           // Bottom action bar
           _buildBottomBar(),
         ],
@@ -132,11 +209,12 @@ class _BookSelectionPageState extends State<BookSelectionPage> {
           ElevatedButton(
             onPressed:
                 _isSelectionComplete
-                    ? () =>
-                        print('Proceed with selected books: $_selectedBookIds')
-                    : null, // Button is disabled if condition is not met
+                    ? () {
+                      likeBooks();
+                      context.go('/dashboard/home');
+                    }
+                    : null,
             style: ElevatedButton.styleFrom(
-              // Visually indicate if the button is disabled
               backgroundColor:
                   _isSelectionComplete
                       ? Theme.of(context).primaryColor
@@ -167,8 +245,7 @@ class BookGridItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        clipBehavior:
-            Clip.antiAlias, // Ensures the content respects the card's border radius
+        clipBehavior: Clip.antiAlias,
         child: GridTile(
           footer: Container(
             padding: const EdgeInsets.all(8.0),
@@ -188,7 +265,6 @@ class BookGridItem extends StatelessWidget {
               Image.network(
                 book.coverUrl,
                 fit: BoxFit.cover,
-                // Show a loading indicator while the image is fetching
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Center(
