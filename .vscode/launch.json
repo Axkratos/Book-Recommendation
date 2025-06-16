@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "bookrec",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "bookrec (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "bookrec (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+
+       {
+  "name": "Flutter Web (Chrome on Port 64922)",
+  "request": "launch",
+  "type": "dart",
+  "args": [
+    "-d",
+    "chrome",
+    "--web-port=64922",
+    "--web-hostname=localhost"
+  ]
+}
+
+    ]
+}

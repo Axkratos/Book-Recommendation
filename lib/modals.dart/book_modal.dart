@@ -21,13 +21,13 @@ class Book {
 
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
-      id: json['_id'],
-      title: json['title'],
-      authors: json['authors'],
-      thumbnail: json['thumbnail'],
-      publishedYear: json['published_year'],
-      averageRating: (json['average_rating'] as num).toDouble(),
-      ratingsCount: json['ratings_count'],
+      id: json['_id'] ?? '',
+      title: json['title'] ?? 'Unknown Title',
+      authors: json['authors'] ?? 'Unknown Author',
+      thumbnail: json['thumbnail'] ?? '',
+      publishedYear: json['published_year'] ?? 0,
+      averageRating: (json['average_rating'] ?? 0).toDouble(),
+      ratingsCount: json['ratings_count'] ?? 0,
       description: json['description'],
     );
   }

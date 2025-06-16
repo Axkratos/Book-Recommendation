@@ -23,9 +23,7 @@ class Authservice {
 
     final response = await http.post(
       url,
-      headers: {'content-type': 'application/json', 
-      
-      },
+      headers: {'content-type': 'application/json'},
       body: jsonEncode(registerUser),
     );
 
@@ -59,7 +57,27 @@ class Authservice {
       return responseData;
     } else {
       return {
-        'status': 'failed',
+        'status': 'failed ${response.statusCode}',
+        'message': 'An error occurred. Please try again.',
+      };
+    }
+  }
+
+  Future<Map<String, String>> verifyEmail(String token) async {
+    final url=Uri.parse('${baseUrl}/api/v1/auth/verifyemail/$token');
+    final response = await http.get(
+      url,
+      headers: {'content-type': 'application/json'},
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final responseData = jsonDecode(response.body);
+      print('Response from verifEmail ${responseData.toString()}');
+      return {'status': 'success', 'token': responseData['token']};
+    } else {
+      print('Error from verifEmail: ${response.statusCode}');     
+       return {
+        
+        'status': 'failed ${response.statusCode}',
         'message': 'An error occurred. Please try again.',
       };
     }

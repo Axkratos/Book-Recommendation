@@ -32,7 +32,13 @@ class Homepage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 /// --- Left: BookRec logo ---
-                title(),
+                GestureDetector(
+                  onTap: () {
+                    context.go('/');
+                    // Navigate to the home page
+                  },
+                  child: title(),
+                ),
 
                 /// --- Center: Search Bar ---
                 Expanded(
@@ -40,7 +46,11 @@ class Homepage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Container(
                       height: 40,
+                      // Wrap TextField with GestureDetector for tap action
                       child: TextField(
+                        onSubmitted: (value) {
+                          context.go('/search/$value');
+                        },
                         style: GoogleFonts.literata(
                           fontSize: 16,
                           color: Colors.black87,
@@ -57,15 +67,14 @@ class Homepage extends StatelessWidget {
                           ),
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.8),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 15),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(25.0),
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        onChanged: (value) {
-                          print('Search query: $value');
-                        },
                       ),
                     ),
                   ),

@@ -4,14 +4,20 @@ import 'package:bookrec/components/VintageButton.dart';
 import 'package:bookrec/components/footer.dart';
 import 'package:bookrec/components/rules.dart';
 import 'package:bookrec/components/text_form_field.dart';
+import 'package:bookrec/components/title.dart';
+import 'package:bookrec/provider/authprovider.dart';
+import 'package:bookrec/services/discussApi.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:bookrec/theme/dashboard_title.dart';
 import 'package:bookrec/theme/texts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:provider/provider.dart';
 
 class WriteReview extends StatefulWidget {
-  const WriteReview({super.key});
+  const WriteReview({super.key, required this.bookId, required this.title});
+  final String bookId;
+  final String title;
 
   @override
   State<WriteReview> createState() => _WriteReviewState();
@@ -19,6 +25,8 @@ class WriteReview extends StatefulWidget {
 
 class _WriteReviewState extends State<WriteReview> {
   final QuillController _quillController = QuillController.basic();
+  final titleController = TextEditingController();
+  final discuss = Discussapi();
 
   @override
   void dispose() {
@@ -28,12 +36,17 @@ class _WriteReviewState extends State<WriteReview> {
 
   @override
   Widget build(BuildContext context) {
+    final ProviderUser = Provider.of<UserProvider>(context);
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: vintageCream,
       body: Padding(
-        padding: EdgeInsets.only(top: screenHeight * 0.04),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.08,
+          vertical: screenHeight * 0.05,
+        ),
         child: ListView(
           children: [
             Row(
@@ -50,9 +63,10 @@ class _WriteReviewState extends State<WriteReview> {
                         children: [
                           dashboard_title(title: 'Discussion'),
                           VintageTextFormField(
+                            enable: false,
                             screenWidth: screenWidth,
                             icon: Icons.search,
-                            hintText: 'Search for a book...',
+                            hintText: widget.title,
                           ),
                         ],
                       ),
@@ -63,6 +77,7 @@ class _WriteReviewState extends State<WriteReview> {
                       Container(
                         width: double.infinity,
                         child: VintageTextFormField(
+                          controller: titleController,
                           screenWidth: screenWidth,
                           icon: Icons.title,
                           hintText: 'Title of the Review',
@@ -132,14 +147,46 @@ class _WriteReviewState extends State<WriteReview> {
                         children: [
                           VintageButton(
                             text: 'Submit',
-                            onPressed: () {
+                            onPressed: () async {
+                              /*
                               final String json = jsonEncode(
                                 _quillController.document.toDelta().toJson(),
+                              );*/
+                              final response = await discuss.createDiscussion(
+                                token:
+                                    ProviderUser
+                                        .token, // Replace with actual token
+                                isbn: widget.bookId,
+                                bookTitle: widget.title,
+                                discussionTitle:
+                                    titleController
+                                        .text, // Replace with actual title
+                                discussionBody:
+                                    jsonEncode(
+                                      _quillController.document
+                                          .toDelta()
+                                          .toJson(),
+                                    ).toString(),
                               );
-                              print('Submitted Review: $json');
-                              _quillController
-                                  .clear(); 
-                                  
+                              if (await response) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Discussion created successfully!',
+                                    ),
+                                  ),
+                                );
+                                _quillController.clear();
+                                titleController.clear();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Failed to create discussion.',
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ],
@@ -153,7 +200,7 @@ class _WriteReviewState extends State<WriteReview> {
                 ), // Placeholder for the right side
               ],
             ),
-            SimpleElegantVintageFooter(),
+            // SimpleElegantVintageFooter(),
           ],
         ),
       ),

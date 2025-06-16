@@ -1,14 +1,24 @@
+import 'package:bookrec/components/shelfIcon.dart';
+import 'package:bookrec/components/star.dart';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:bookrec/services/booksapi.dart';
+import 'package:provider/provider.dart';
 
 // --- VINTAGE COLOR CONSTANTS (as defined above) ---
 
-class VintageBookCard extends StatelessWidget {
+class VintageBookCard extends StatefulWidget {
   final Map<String, dynamic> book;
 
   const VintageBookCard({super.key, required this.book});
 
+  @override
+  State<VintageBookCard> createState() => _VintageBookCardState();
+}
+
+class _VintageBookCardState extends State<VintageBookCard> {
   Widget _buildDetailRow(String label, String? value, {double fontSize = 15}) {
     if (value == null || value.isEmpty) return const SizedBox.shrink();
     return SelectionArea(
@@ -87,25 +97,27 @@ class VintageBookCard extends StatelessWidget {
     );
 
     // Extracting data safely
-    String title = book['title'] as String? ?? 'Unknown Title';
-    String author = book['author'] as String? ?? 'Unknown Author';
-    int? publicationYear = book['publication_year'] as int?;
-    String genre = book['genre'] as String? ?? 'N/A';
-    String summary = book['summary'] as String? ?? 'No summary available.';
-    String? coverImage = book['cover_image'] as String?;
-    double? rating = (book['rating'] as num?)?.toDouble();
-    int? pages = book['pages'] as int?;
-    String publisher = book['publisher'] as String? ?? 'N/A';
+    String title = widget.book['title'] as String? ?? 'Unknown Title';
+    String author = widget.book['authors'] as String? ?? 'Unknown Author';
+    int? publicationYear = widget.book['published_year'] as int?;
+    String genre = widget.book['categories'] as String? ?? 'N/A';
+    String summary =
+        widget.book['description'] as String? ?? 'No summary available.';
+    String? coverImage = widget.book['thumbnail'] as String?;
+    //'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1650033243i/41733839.jpg';
+    double? rating = (widget.book['average_rating'] as num?)?.toDouble();
+    int? pages = widget.book['pages'] as int?;
+    String publisher = widget.book['publisher'] as String? ?? '';
     List<String> characters = List<String>.from(
-      book['characters'] as List? ?? [],
+      widget.book['characters'] as List? ?? [],
     );
-    String aboutAuthor = book['about_author'] as String? ?? '';
-    String theme = book['theme'] as String? ?? '';
-    String isbn = book['isbn'] as String? ?? '';
-    String language = book['language'] as String? ?? '';
-    String setting = book['setting'] as String? ?? '';
+    String aboutAuthor = widget.book['about_author'] as String? ?? '';
+    String theme = widget.book['theme'] as String? ?? '';
+    String isbn = widget.book['isbn10'] as String? ?? '';
+    String language = widget.book['language'] as String? ?? '';
+    String setting = widget.book['setting'] as String? ?? '';
     List<String> adaptations = List<String>.from(
-      book['adaptations'] as List? ?? [],
+      widget.book['adaptations'] as List? ?? [],
     );
 
     // Define a width for the image part and a height for the card.
@@ -114,6 +126,23 @@ class VintageBookCard extends StatelessWidget {
     final double imageWidth = cardWidth * 0.35; // Image takes 35% of card width
     // Define a max height for the card to keep it manageable
     final double cardMaxHeight = MediaQuery.of(context).size.height * 0.75;
+
+    print('📚 DEBUG inside VintageBookCard:');
+    print('Title: ${widget.book['title']}');
+    print('cover image: ${coverImage ?? 'No image available'}');
+
+    print('All book data: ${widget.book}');
+
+    final bookInfo = BooksInfo();
+    final ProviderUser = Provider.of<UserProvider>(context);
+    Future<String> rate(String bookID, int value) async {
+      final String response = await bookInfo.bookRatings(
+        bookID,
+        value,
+        ProviderUser.token,
+      );
+      return response;
+    }
 
     return Container(
       width: cardWidth,
@@ -140,7 +169,8 @@ class VintageBookCard extends StatelessWidget {
                   // Align children to the top
                   children: <Widget>[
                     // --- Left Side: Image ---
-                    Container(
+                    SizedBox(
+                      //height: 250,
                       width: imageWidth,
                       // The height will be determined by the Row's height, which is constrained by cardMaxHeight.
                       // BoxFit.cover will fill this space.
@@ -226,29 +256,46 @@ class VintageBookCard extends StatelessWidget {
                                 style: smallDetailStyle,
                               ),
                             ),
+                          Row(
+                            children: [
+                              StarRating(
+                                token: ProviderUser.token,
+                                bookId: widget.book['isbn10'],
+                                getRatingsCount: bookInfo.getRatingsCount,
+                                size: 30,
+                                onRatingChanged: (value) {},
+                              ),
+                              const SizedBox(width: 8),
+                              ShelfButtonWidget(
+                                bookId: widget.book['isbn10'],
+                                token: ProviderUser.token,
+                                bookData: widget.book,
+                              ),
+                            ],
+                          ),
                           Divider(
                             color: vintageBorderColor.withOpacity(0.6),
                             height: 20,
                             thickness: 1.0,
                           ),
 
-                          _buildDetailRow('Genre', genre, fontSize: 18),
+                          _buildDetailRow('Genre', genre, fontSize: 30),
                           _buildDetailRow('Theme', theme, fontSize: 18),
                           if (pages != null)
                             _buildDetailRow(
                               'Pages',
                               pages.toString(),
-                              fontSize: 18,
+                              fontSize: 24,
                             ),
                           if (rating != null)
                             _buildDetailRow(
                               'Rating',
                               '${rating.toStringAsFixed(1)} / 5.0',
-                              fontSize: 14,
+                              fontSize: 30,
                             ),
-                          _buildDetailRow('Publisher', publisher, fontSize: 18),
+                          _buildDetailRow('Publisher', publisher, fontSize: 30),
                           _buildDetailRow('Language', language, fontSize: 18),
-                          _buildDetailRow('ISBN', isbn, fontSize: 18),
+                          _buildDetailRow('ISBN', isbn, fontSize: 30),
                           _buildDetailRow('Setting', setting, fontSize: 18),
 
                           _buildSectionText('Synopsis', summary, bodyTextStyle),
@@ -271,9 +318,9 @@ class VintageBookCard extends StatelessWidget {
                               adaptations.join('; '),
                               bodyTextStyle.copyWith(fontSize: 18, height: 1.3),
                             ),
-                          const SizedBox(
-                            height: 10,
-                          ), // Some bottom padding within scroll view
+                          const SizedBox(height: 10),
+                          //AddToShelfButton(onPressed: () {}),
+                          // Some bottom padding within scroll view
                         ],
                       ),
                     ),
@@ -371,6 +418,44 @@ class VintageBookCard extends StatelessWidget {
                                   style: smallDetailStyle,
                                 ),
                               ),
+                            Row(
+                              children: [
+                                StarRating(
+                                  token: ProviderUser.token,
+                                  bookId: widget.book['isbn10'],
+                                  getRatingsCount: bookInfo.getRatingsCount,
+                                  size: 30,
+                                  onRatingChanged: (value) async {
+                                    final String r = await rate(
+                                      widget.book['isbn10'],
+                                      value,
+                                    );
+                                    print('Rating response: $r');
+                                    if (r == 'sucess') {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Rating submitted!'),
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text('Error: $r')),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                ShelfButtonWidget(
+                                  bookId: widget.book['isbn10'],
+                                  token: ProviderUser.token,
+                                  bookData: widget.book,
+                                ),
+                              ],
+                            ),
                             Divider(
                               color: vintageBorderColor.withOpacity(0.6),
                               height: 20,
@@ -430,9 +515,8 @@ class VintageBookCard extends StatelessWidget {
                                   height: 1.3,
                                 ),
                               ),
-                            const SizedBox(
-                              height: 10,
-                            ), // Some bottom padding within scroll view
+                            const SizedBox(height: 10),
+                            // Some bottom padding within scroll view
                           ],
                         ),
                       ),

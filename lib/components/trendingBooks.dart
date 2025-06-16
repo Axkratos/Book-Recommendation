@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class trendingBook extends StatelessWidget {
@@ -37,26 +38,33 @@ class trendingBook extends StatelessWidget {
           // Desktop View - Horizontal Scroll
           return ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: 8,
+            itemCount: 15,
             itemBuilder: (context, index) {
-              return Container(
-                width: width * 0.2,
-                margin: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
-                ),
-                child: BookCard(
-                  book: books[index],
-                  width: width * 0.1,
-                  isDesktop: true,
+              return GestureDetector(
+                onTap: () {
+                  context.go(
+                    '/book/${books[index]['isbn10']}/${books[index]['title']}',
+                  );
+                },
+                child: Container(
+                  width: width * 0.2,
+                  margin: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                  child: BookCard(
+                    book: books[index],
+                    width: width * 0.1,
+                    isDesktop: true,
+                  ),
                 ),
               );
             },
