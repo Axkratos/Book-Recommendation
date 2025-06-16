@@ -57,6 +57,36 @@ class Discussapi {
       throw Exception('Failed to load forum data');
     }
   }
+
+  Future<String> CreateComment({
+    required String isbn,
+    required String forumId,
+    required String commentBody,
+    required String token,
+  }) async {
+    final url = Uri.parse('${baseUrl}/api/v1/books/comment');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        "isbn": isbn,
+        "forumId": forumId,
+        "comment": commentBody,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print('Comment created successfully: ${response.body}');
+      return 'sucess';
+    } else {
+      print('Failed to create comment: ${response.body}');
+      return 'failed';
+    }
+  }
 }
 
 class ForumPageResponse {

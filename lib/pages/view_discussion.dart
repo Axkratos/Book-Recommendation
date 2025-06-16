@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:bookrec/provider/authprovider.dart';
+import 'package:bookrec/services/discussApi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
@@ -46,6 +47,8 @@ dynamic safeDecode(dynamic body) {
     {"insert": "Invalid or no content\n"},
   ];
 }
+
+final discuss = Discussapi();
 
 // Mock API call to fetch comments for a forum post
 Future<List<Comment>> fetchCommentsForForum(String forumId) async {
@@ -191,6 +194,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     ]);
 
     _forumData = results[0] as Map<String, dynamic>;
+    print('Forum Data: $_forumData');
     _quillController = quill.QuillController(
       document: quill.Document.fromJson(_forumData!['content']),
       selection: const TextSelection.collapsed(offset: 0),
@@ -211,8 +215,24 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     super.dispose();
   }
 
+  Future<String> commentCreation(
+    String isbn,
+    String forumId,
+    String content,
+  ) async {
+    final providerUser = Provider.of<UserProvider>(context, listen: false);
+    return discuss.CreateComment(
+      isbn: isbn,
+      forumId: forumId,
+      commentBody: content,
+      token: providerUser.token,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final ProviderUser = Provider.of<UserProvider>(context);
+
     return Scaffold(
       backgroundColor: vintageBackground,
       // Using a custom scroll view for more complex layouts if needed
@@ -379,19 +399,84 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: Implement comment posting logic
-                debugPrint('Posting comment: ${_commentController.text}');
-                _commentController.clear();
-                // Show a snackbar or refresh comments list
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: vintagePrimaryText,
-                    content: Text(
-                      'Comment posted!',
-                      style: GoogleFonts.montserrat(color: Colors.white),
+                if (_commentController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: vintagePrimaryText,
+                      content: Text(
+                        'Please enter a comment before posting.',
+                        style: GoogleFonts.montserrat(color: Colors.white),
+                      ),
                     ),
-                  ),
-                );
+                  );
+                  return;
+                } else {
+                  // Call the API to post the comment
+
+                  commentCreation(
+                        //_forumData!['isbn'],
+                        '0439785960',
+                        widget.forumId,
+                        _commentController.text,
+                      )
+                      .then((response) {
+                        print('Comment response: $response');
+                        if (response == 'sucess') {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: vintagePrimaryText,
+                              content: Text(
+                                'Comment posted successfully!',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                          // Optionally, you can refresh the comments list here
+                          setState(() {
+                            _comments.add(
+                              Comment(
+                                id: DateTime.now().toString(),
+                                authorName: 'Anonymous',
+                                avatarUrl: 'https://i.pravatar.cc/150',
+                                content: _commentController.text,
+                                timeAgo: 'just now',
+                              ),
+                            );
+                          });
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: vintagePrimaryText,
+                              content: Text(
+                                'Failed to post comment. Please try again.',
+                                style: GoogleFonts.montserrat(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      })
+                      .catchError((error) {
+                        debugPrint('Error posting comment: $error');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: vintagePrimaryText,
+                            content: Text(
+                              'An error occurred while posting your comment.',
+                              style: GoogleFonts.montserrat(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      });
+                }
+                debugPrint('Posting comment: ${_commentController.text}');
+                //_commentController.clear();
+                // Show a snackbar or refresh comments list
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: vintagePrimaryText,
