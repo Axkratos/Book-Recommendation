@@ -1,30 +1,28 @@
-import User from '../models/userModel.js';
-import dotenv from 'dotenv';
-import axios from 'axios';
-import TrendingBook from '../models/trendingModel.js';
-import Book from '../models/bookModel.js';
-import Rating from '../models/ratingModel.js';
-import NodeCache from 'node-cache';
-import Review from '../models/reviewModel.js';
+import User from "../models/userModel.js";
+import dotenv from "dotenv";
+import axios from "axios";
+import TrendingBook from "../models/trendingModel.js";
+import Book from "../models/bookModel.js";
+import Rating from "../models/ratingModel.js";
+import NodeCache from "node-cache";
+import Review from "../models/reviewModel.js";
 
 const searchCache = new NodeCache({ stdTTL: 1800 }); // 30 minutes for search results
 const categoryCache = new NodeCache({ stdTTL: 3600 });
 const cache = new NodeCache({ stdTTL: 3600, checkperiod: 120 });
 
-
 dotenv.config(); // ← loads .env into process.env
 
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
-
+const FASTAPI_URL = process.env.FASTAPI_URL || "http://localhost:8000";
 
 export const likeBooks = async (req, res) => {
-  const  id  = req.user.id;// User ID
+  const id = req.user.id; // User ID
   const { liked_books } = req.body; // Expect: { liked_books: ['Book 1', 'Book 2'] }
 
   if (!Array.isArray(liked_books)) {
     return res.status(400).json({
-      status: 'fail',
-      message: 'liked_books must be an array of strings.'
+      status: "fail",
+      message: "liked_books must be an array of strings.",
     });
   }
 
@@ -37,21 +35,21 @@ export const likeBooks = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'User not found.'
+        status: "fail",
+        message: "User not found.",
       });
     }
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: {
-        liked_books: user.liked_books
-      }
+        liked_books: user.liked_books,
+      },
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
@@ -61,35 +59,38 @@ export const checkBookSelected = async (req, res) => {
 
   try {
     // Fetch only the liked_books field
-    const user = await User.findById(userId).select('liked_books');
+    const user = await User.findById(userId).select("liked_books");
 
     if (!user) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'User not found.'
+        status: "fail",
+        message: "User not found.",
       });
     }
 
-    const bookSelected = Array.isArray(user.liked_books) && user.liked_books.length > 0;
+    const bookSelected =
+      Array.isArray(user.liked_books) && user.liked_books.length > 0;
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: {
-        bookSelected
-      }
+        bookSelected,
+      },
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
 // POST /api/recommend
 export const getLLMRecommendations = async (req, res) => {
-  const text  = req.body.text; // e.g. "a book where king dies"
-  if (!text || typeof text !== 'string') {
-    return res.status(400).json({ status: 'fail', message: 'Missing or invalid "text" in body.' });
+  const text = req.body.text; // e.g. "a book where king dies"
+  if (!text || typeof text !== "string") {
+    return res
+      .status(400)
+      .json({ status: "fail", message: 'Missing or invalid "text" in body.' });
   }
 
   try {
@@ -99,16 +100,16 @@ export const getLLMRecommendations = async (req, res) => {
     const response = await axios.post(
       endpoint,
       { text },
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } }
     );
 
     // response.data is assumed to be the array of books
     return res.status(200).json(response.data);
   } catch (err) {
-    console.error('Error fetching from FastAPI:', err.message);
+    console.error("Error fetching from FastAPI:", err.message);
     return res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch recommendations from FastAPI.',
+      status: "error",
+      message: "Failed to fetch recommendations from FastAPI.",
     });
   }
 };
@@ -121,88 +122,93 @@ export const getTrendingBooks = async (req, res) => {
       .lean();
 
     return res.status(200).json({
-      status: 'success',
-      data: books
+      status: "success",
+      data: books,
     });
   } catch (err) {
-    console.error('Error fetching trending books:', err);
+    console.error("Error fetching trending books:", err);
     return res.status(500).json({
-      status: 'error',
-      message: 'Unable to retrieve trending books.'
+      status: "error",
+      message: "Unable to retrieve trending books.",
     });
   }
 };
 
-
-
-export const addRating = async (req, res) => {
+export const addRating = async (req, res, next) => {
   const { ISBN, rating } = req.body;
-  const userId = req.user.id; // 👈 this is your numeric User-ID
+  const userId = req.user.id;
 
   // Basic validation
   if (
-    !ISBN || typeof ISBN !== 'string' ||
-    rating === undefined || typeof rating !== 'number' || rating < 0 || rating > 10
+    !ISBN ||
+    typeof ISBN !== "string" ||
+    rating === undefined ||
+    typeof rating !== "number" ||
+    rating < 0 ||
+    rating > 10
   ) {
     return res.status(400).json({
-      status: 'fail',
-      message: 'Request body must include { ISBN: String, rating: Number (0-10) }'
+      status: "fail",
+      message:
+        "Request body must include { ISBN: String, rating: Number (0-10) }",
     });
   }
 
   try {
-    // Check if user exists
+    // 1) Ensure user exists
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'User not found.'
+        status: "fail",
+        message: "User not found.",
       });
     }
 
-    // Check if rating already exists for this user and ISBN
-    const existingRating = await Rating.findOne({ 'User-ID': userId, ISBN });
-    if (existingRating) {
-      // If exists, update it
-      existingRating['Book-Rating'] = rating;
-      await existingRating.save();
-      return res.status(200).json({
-        status: 'success',
-        message: `Rating for ISBN ${ISBN} updated.`,
-        data: existingRating
+    // 2) Upsert rating
+    let savedRating = await Rating.findOneAndUpdate(
+      { "User-ID": userId, ISBN },
+      { "Book-Rating": rating },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // 3) Count how many distinct books this user has rated
+    const count = await Rating.countDocuments({
+      "User-ID": userId,
+      "Book-Rating": { $gt: 0 },
+    });
+
+    // 4) Only once they have >= 5 ratings, fetch & save 12 recs
+    if (count % 5 === 0) {
+      const resp = await axios.get(`${FASTAPI_URL}/recommend/${userId}`, {
+        params: { top_n: 12 },
+      });
+      const recIsbns = resp.data.slice(0, 12);
+
+      // Overwrite userbased array
+      await User.findByIdAndUpdate(userId, {
+        $set: { "recommendation.userbased": recIsbns },
       });
     }
 
-    // If not, create a new rating
-    const newRating = await Rating.create({
-      'User-ID': userId,
-      ISBN,
-      'Book-Rating': rating
+    // 5) Return standard rating response
+    return res.status(200).json({
+      status: "success",
+      message: `Rating for ISBN ${ISBN} saved.`,
+      data: savedRating,
     });
-
-    res.status(201).json({
-      status: 'success',
-      message: `Rating for ISBN ${ISBN} added.`,
-      data: newRating
-    });
-
   } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: err.message
-    });
+    return next(err);
   }
 };
-
 
 export const getRating = async (req, res) => {
   const ISBN = req.params.isbn10;
   const userId = req.user.id;
 
-  if (!ISBN || typeof ISBN !== 'string') {
+  if (!ISBN || typeof ISBN !== "string") {
     return res.status(400).json({
-      status: 'fail',
-      message: 'Request params must include ISBN as a string.'
+      status: "fail",
+      message: "Request params must include ISBN as a string.",
     });
   }
 
@@ -210,71 +216,70 @@ export const getRating = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'User not found.'
+        status: "fail",
+        message: "User not found.",
       });
     }
 
-    const existingRating = await Rating.findOne({ 'User-ID': userId, ISBN });
+    const existingRating = await Rating.findOne({ "User-ID": userId, ISBN });
 
     if (existingRating) {
       return res.status(200).json({
-        status: 'success',
+        status: "success",
         message: `Rating found for ISBN ${ISBN}.`,
         data: {
-          rating: existingRating['Book-Rating']
-        }
+          rating: existingRating["Book-Rating"],
+        },
       });
     }
 
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       message: `No rating found for ISBN ${ISBN}.`,
       data: {
-        rating: 0
-      }
+        rating: 0,
+      },
     });
-
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
 
-
-
 export const getBooks = async (req, res) => {
   try {
-    const { 
-      categories = '', 
-      page = 1, 
+    const {
+      categories = "",
+      page = 1,
       limit = 10,
-      sortByYear = '', // 'asc', 'desc', or empty
-      minRating = 0,   // minimum average rating filter
-      search = '',     // NEW: text search parameter
-      searchFields = 'title,authors,description' // NEW: which fields to search in
+      sortByYear = "", // 'asc', 'desc', or empty
+      minRating = 0, // minimum average rating filter
+      search = "", // NEW: text search parameter
+      searchFields = "title,authors,description", // NEW: which fields to search in
     } = req.query;
-    
+
     const pg = Math.max(1, parseInt(page, 10));
     const lim = Math.max(1, parseInt(limit, 10));
     const minRatingFilter = Math.max(0, parseFloat(minRating) || 0);
-    const yearSort = ['asc', 'desc'].includes(sortByYear?.toLowerCase()) ? sortByYear.toLowerCase() : '';
+    const yearSort = ["asc", "desc"].includes(sortByYear?.toLowerCase())
+      ? sortByYear.toLowerCase()
+      : "";
     const searchText = search.trim();
-    const fieldsToSearch = searchFields.split(',').map(f => f.trim());
+    const fieldsToSearch = searchFields.split(",").map((f) => f.trim());
 
     // Build sort object based on parameters
     let sortCriteria = {};
-    if (yearSort === 'asc') {
+    if (yearSort === "asc") {
       sortCriteria.published_year = 1;
-    } else if (yearSort === 'desc') {
+    } else if (yearSort === "desc") {
       sortCriteria.published_year = -1;
     } else {
       // Default sorting by rating and review count
-      sortCriteria = { 
+      sortCriteria = {
         average_rating: -1,
-        ratings_count: -1 
+        ratings_count: -1,
       };
     }
 
@@ -295,7 +300,7 @@ export const getBooks = async (req, res) => {
         pg,
         lim,
         yearSort,
-        minRatingFilter
+        minRatingFilter,
       });
     }
 
@@ -307,12 +312,11 @@ export const getBooks = async (req, res) => {
       pg,
       lim,
       yearSort,
-      minRatingFilter
+      minRatingFilter,
     });
-
   } catch (err) {
-    console.error('Error in getBooks:', err);
-    res.status(500).json({ status: 'error', message: err.message });
+    console.error("Error in getBooks:", err);
+    res.status(500).json({ status: "error", message: err.message });
   }
 };
 
@@ -327,41 +331,45 @@ const handleTextSearch = async (req, res, params) => {
     pg,
     lim,
     yearSort,
-    minRatingFilter
+    minRatingFilter,
   } = params;
 
   // Create cache key for search results
-  const cacheKey = `search_${searchText}_${fieldsToSearch.join('_')}_${categories}_${yearSort}_${minRatingFilter}`;
+  const cacheKey = `search_${searchText}_${fieldsToSearch.join("_")}_${categories}_${yearSort}_${minRatingFilter}`;
   let searchResults = searchCache.get(cacheKey);
 
   if (!searchResults) {
     // Build text search query
     const searchQuery = { ...baseQuery };
-    
+
     // Create text search conditions
     const textSearchConditions = [];
-    
+
     // MongoDB text search (if you have text index)
-    if (fieldsToSearch.includes('title') || fieldsToSearch.includes('authors') || fieldsToSearch.includes('description')) {
+    if (
+      fieldsToSearch.includes("title") ||
+      fieldsToSearch.includes("authors") ||
+      fieldsToSearch.includes("description")
+    ) {
       textSearchConditions.push({
-        $text: { $search: searchText }
+        $text: { $search: searchText },
       });
     }
-    
+
     // Regex search for more flexible matching
     const regexSearchConditions = [];
-    const searchRegex = new RegExp(searchText.split(' ').join('|'), 'i');
-    
-    if (fieldsToSearch.includes('title')) {
+    const searchRegex = new RegExp(searchText.split(" ").join("|"), "i");
+
+    if (fieldsToSearch.includes("title")) {
       regexSearchConditions.push({ title: { $regex: searchRegex } });
     }
-    if (fieldsToSearch.includes('authors')) {
+    if (fieldsToSearch.includes("authors")) {
       regexSearchConditions.push({ authors: { $regex: searchRegex } });
     }
-    if (fieldsToSearch.includes('description')) {
+    if (fieldsToSearch.includes("description")) {
       regexSearchConditions.push({ description: { $regex: searchRegex } });
     }
-    
+
     // Combine search conditions
     if (regexSearchConditions.length > 0) {
       searchQuery.$or = regexSearchConditions;
@@ -372,66 +380,74 @@ const handleTextSearch = async (req, res, params) => {
       const reqCats = categories
         .toLowerCase()
         .split(/[,&;\/]+/)
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
-      
+
       searchQuery.categories = {
-        $regex: reqCats.join('|'),
-        $options: 'i'
+        $regex: reqCats.join("|"),
+        $options: "i",
       };
     }
 
-    console.log(`Performing text search for: "${searchText}" in fields: ${fieldsToSearch.join(', ')}`);
-    
+    console.log(
+      `Performing text search for: "${searchText}" in fields: ${fieldsToSearch.join(", ")}`
+    );
+
     // Execute search query
-    const books = await Book.find(searchQuery)
-      .sort(sortCriteria)
-      .limit(5000); // Limit initial results for performance
+    const books = await Book.find(searchQuery).sort(sortCriteria).limit(5000); // Limit initial results for performance
 
     // Calculate relevance scores for search results
-    searchResults = books.map(book => {
+    searchResults = books.map((book) => {
       let relevanceScore = 0;
-      const searchTerms = searchText.toLowerCase().split(' ').filter(Boolean);
-      
+      const searchTerms = searchText.toLowerCase().split(" ").filter(Boolean);
+
       // Score based on title matches (highest weight)
-      if (fieldsToSearch.includes('title') && book.title) {
+      if (fieldsToSearch.includes("title") && book.title) {
         const titleLower = book.title.toLowerCase();
-        searchTerms.forEach(term => {
+        searchTerms.forEach((term) => {
           if (titleLower.includes(term)) {
             relevanceScore += titleLower.startsWith(term) ? 10 : 5; // Bonus for starting match
           }
         });
       }
-      
+
       // Score based on author matches (medium weight)
-      if (fieldsToSearch.includes('authors') && book.authors) {
+      if (fieldsToSearch.includes("authors") && book.authors) {
         const authorsLower = book.authors.toLowerCase();
-        searchTerms.forEach(term => {
+        searchTerms.forEach((term) => {
           if (authorsLower.includes(term)) {
             relevanceScore += 3;
           }
         });
       }
-      
+
       // Score based on description matches (lower weight)
-      if (fieldsToSearch.includes('description') && book.description) {
+      if (fieldsToSearch.includes("description") && book.description) {
         const descLower = book.description.toLowerCase();
-        searchTerms.forEach(term => {
+        searchTerms.forEach((term) => {
           if (descLower.includes(term)) {
             relevanceScore += 1;
           }
         });
       }
-      
+
       // Category relevance score (if categories were filtered)
       let categoryScore = 0;
       if (categories.trim()) {
-        const reqCats = categories.toLowerCase().split(/[,&;\/]+/).map(s => s.trim()).filter(Boolean);
-        const bookCats = (book.categories || '').toLowerCase().split(/[,&;\/\s]+/).map(s => s.trim()).filter(Boolean);
-        
+        const reqCats = categories
+          .toLowerCase()
+          .split(/[,&;\/]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const bookCats = (book.categories || "")
+          .toLowerCase()
+          .split(/[,&;\/\s]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+
         let exactMatches = 0;
         let partialMatches = 0;
-        
+
         for (const reqCat of reqCats) {
           for (const bookCat of bookCats) {
             if (bookCat === reqCat) {
@@ -443,14 +459,15 @@ const handleTextSearch = async (req, res, params) => {
             }
           }
         }
-        
-        categoryScore = (exactMatches * 1.0 + partialMatches * 0.5) / reqCats.length;
+
+        categoryScore =
+          (exactMatches * 1.0 + partialMatches * 0.5) / reqCats.length;
       }
-      
+
       return {
         book,
         relevanceScore,
-        categoryScore: categoryScore || 0
+        categoryScore: categoryScore || 0,
       };
     });
 
@@ -460,16 +477,16 @@ const handleTextSearch = async (req, res, params) => {
       if (b.relevanceScore !== a.relevanceScore) {
         return b.relevanceScore - a.relevanceScore;
       }
-      
+
       // Secondary: category relevance
       if (b.categoryScore !== a.categoryScore) {
         return b.categoryScore - a.categoryScore;
       }
-      
+
       // Tertiary: user sort preference
-      if (yearSort === 'asc') {
+      if (yearSort === "asc") {
         return (a.book.published_year || 0) - (b.book.published_year || 0);
-      } else if (yearSort === 'desc') {
+      } else if (yearSort === "desc") {
         return (b.book.published_year || 0) - (a.book.published_year || 0);
       } else {
         // Default: rating and review count
@@ -482,7 +499,9 @@ const handleTextSearch = async (req, res, params) => {
 
     // Cache the search results
     searchCache.set(cacheKey, searchResults);
-    console.log(`Cached ${searchResults.length} search results for: "${searchText}"`);
+    console.log(
+      `Cached ${searchResults.length} search results for: "${searchText}"`
+    );
   }
 
   // Paginate results
@@ -490,25 +509,25 @@ const handleTextSearch = async (req, res, params) => {
   const paginated = searchResults.slice(start, start + lim);
 
   return res.status(200).json({
-    status: 'success',
+    status: "success",
     results: paginated.length,
     data: paginated.map(({ book, relevanceScore, categoryScore }) => ({
       ...book.toObject(),
       relevanceScore,
-      categoryScore
+      categoryScore,
     })),
     pagination: {
       page: pg,
       limit: lim,
-      totalMatches: searchResults.length
+      totalMatches: searchResults.length,
     },
     filters: {
       searchText,
-      searchFields: fieldsToSearch.join(', '),
+      searchFields: fieldsToSearch.join(", "),
       categories: categories.trim(),
       sortByYear: yearSort,
-      minRating: minRatingFilter
-    }
+      minRating: minRatingFilter,
+    },
   });
 };
 
@@ -521,7 +540,7 @@ const handleCategorySearch = async (req, res, params) => {
     pg,
     lim,
     yearSort,
-    minRatingFilter
+    minRatingFilter,
   } = params;
 
   // If no categories provided, return books with filters
@@ -530,23 +549,23 @@ const handleCategorySearch = async (req, res, params) => {
       .sort(sortCriteria)
       .skip((pg - 1) * lim)
       .limit(lim);
-    
+
     const totalBooks = await Book.countDocuments(baseQuery);
-    
+
     return res.status(200).json({
-      status: 'success',
+      status: "success",
       results: books.length,
-      data: books.map(book => ({ ...book.toObject(), similarity: 0 })),
+      data: books.map((book) => ({ ...book.toObject(), similarity: 0 })),
       pagination: {
         page: pg,
         limit: lim,
-        totalMatches: totalBooks
+        totalMatches: totalBooks,
       },
       filters: {
-        categories: '',
+        categories: "",
         sortByYear: yearSort,
-        minRating: minRatingFilter
-      }
+        minRating: minRatingFilter,
+      },
     });
   }
 
@@ -554,23 +573,23 @@ const handleCategorySearch = async (req, res, params) => {
   const reqCats = categories
     .toLowerCase()
     .split(/[,&;\/]+/)
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 
   // Create cache key with all filters
-  const cacheKey = `books_${reqCats.sort().join('_')}_${yearSort}_${minRatingFilter}`;
+  const cacheKey = `books_${reqCats.sort().join("_")}_${yearSort}_${minRatingFilter}`;
   let scored = categoryCache.get(cacheKey);
 
   if (!scored) {
     // Build query with rating filter
     const query = {
       ...baseQuery,
-      categories: { 
-        $regex: reqCats.join('|'), 
-        $options: 'i' 
-      }
+      categories: {
+        $regex: reqCats.join("|"),
+        $options: "i",
+      },
     };
-    
+
     // Apply minimum rating filter or default
     if (!query.average_rating && minRatingFilter === 0) {
       query.average_rating = { $gte: 3.0 }; // Default: only decent ratings
@@ -581,19 +600,21 @@ const handleCategorySearch = async (req, res, params) => {
       .sort(sortCriteria)
       .limit(2000);
 
-    console.log(`Processing ${candidateBooks.length} candidate books for categories: ${reqCats.join(', ')}`);
+    console.log(
+      `Processing ${candidateBooks.length} candidate books for categories: ${reqCats.join(", ")}`
+    );
 
     // Calculate similarity scores
-    scored = candidateBooks.map(book => {
+    scored = candidateBooks.map((book) => {
       const bookCats = book.categories
         .toLowerCase()
         .split(/[,&;\/\s]+/)
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
 
       let exactMatches = 0;
       let partialMatches = 0;
-      
+
       for (const reqCat of reqCats) {
         for (const bookCat of bookCats) {
           if (bookCat === reqCat) {
@@ -606,17 +627,18 @@ const handleCategorySearch = async (req, res, params) => {
         }
       }
 
-      const score = (exactMatches * 1.0 + partialMatches * 0.5) / reqCats.length;
+      const score =
+        (exactMatches * 1.0 + partialMatches * 0.5) / reqCats.length;
       return { book, score };
     });
 
     // Sort by similarity score and user preferences
     scored.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      
-      if (yearSort === 'asc') {
+
+      if (yearSort === "asc") {
         return (a.book.published_year || 0) - (b.book.published_year || 0);
-      } else if (yearSort === 'desc') {
+      } else if (yearSort === "desc") {
         return (b.book.published_year || 0) - (a.book.published_year || 0);
       } else {
         if (b.book.average_rating !== a.book.average_rating) {
@@ -627,7 +649,9 @@ const handleCategorySearch = async (req, res, params) => {
     });
 
     categoryCache.set(cacheKey, scored);
-    console.log(`Cached ${scored.length} scored results for categories: ${reqCats.join(', ')}`);
+    console.log(
+      `Cached ${scored.length} scored results for categories: ${reqCats.join(", ")}`
+    );
   }
 
   // Paginate results
@@ -635,22 +659,22 @@ const handleCategorySearch = async (req, res, params) => {
   const paginated = scored.slice(start, start + lim);
 
   return res.status(200).json({
-    status: 'success',
+    status: "success",
     results: paginated.length,
     data: paginated.map(({ book, score }) => ({
       ...book.toObject(),
-      similarity: score
+      similarity: score,
     })),
     pagination: {
       page: pg,
       limit: lim,
-      totalMatches: scored.length
+      totalMatches: scored.length,
     },
     filters: {
-      categories: reqCats.join(', '),
+      categories: reqCats.join(", "),
       sortByYear: yearSort,
-      minRating: minRatingFilter
-    }
+      minRating: minRatingFilter,
+    },
   });
 };
 
@@ -667,19 +691,26 @@ const getBookDetails = async (isbn) => {
   return book;
 };
 
-
 export const getItemBasedRecommendations = async (req, res) => {
   const userId = req.user.id;
   const limit = parseInt(req.query.limit, 10) || 20;
 
   try {
     // Fetch user's liked books (last 4)
-    const user = await User.findById(userId).select('liked_books');
-    if (!user) return res.status(404).json({ status: 'fail', message: 'User not found.' });
+    const user = await User.findById(userId).select("liked_books");
+    if (!user)
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found." });
 
     const recentTitles = user.liked_books.slice(-4);
     if (recentTitles.length === 0) {
-      return res.status(400).json({ status: 'fail', message: 'Not enough liked books to generate recommendations.' });
+      return res
+        .status(400)
+        .json({
+          status: "fail",
+          message: "Not enough liked books to generate recommendations.",
+        });
     }
 
     // Call FastAPI for item-based recommendations
@@ -704,31 +735,33 @@ export const getItemBasedRecommendations = async (req, res) => {
     user.recommendation.itembased = isbnList;
     await user.save();
 
-    return res.status(200).json({ status: 'success', data: detailedRecs });
+    return res.status(200).json({ status: "success", data: detailedRecs });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ status: 'error', message: err.message });
+    return res.status(500).json({ status: "error", message: err.message });
   }
 };
 
-
 export const getItemBasedRecommendationsByTitle = async (req, res) => {
   const { title } = req.params;
-  const limit  = parseInt(req.query.limit, 10) || 15;
+  const limit = parseInt(req.query.limit, 10) || 15;
 
   if (!title) {
     return res
       .status(400)
-      .json({ status: 'fail', message: 'Book title is required in URL params.' });
+      .json({
+        status: "fail",
+        message: "Book title is required in URL params.",
+      });
   }
 
   try {
     // Build the exact payload you want FastAPI to see
     const payload = {
-      "book_titles": [ title ],
-      "limit": limit
+      book_titles: [title],
+      limit: limit,
     };
-    console.log(payload)
+    console.log(payload);
 
     // Make sure JSON is sent
     const response = await axios.post(
@@ -736,8 +769,8 @@ export const getItemBasedRecommendationsByTitle = async (req, res) => {
       payload,
       {
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -751,15 +784,14 @@ export const getItemBasedRecommendationsByTitle = async (req, res) => {
 
     return res
       .status(200)
-      .json({ status: 'success', data: detailedRecs.filter(b => b) });
-
+      .json({ status: "success", data: detailedRecs.filter((b) => b) });
   } catch (err) {
     // If FastAPI returned a non-2xx, axios puts its body on err.response.data
-    const status  = err.response?.status  || 500;
+    const status = err.response?.status || 500;
     const message = err.response?.data?.message || err.message;
 
-    console.error('[ERROR] FastAPI call failed:', status, message);
-    return res.status(status).json({ status: 'error', message });
+    console.error("[ERROR] FastAPI call failed:", status, message);
+    return res.status(status).json({ status: "error", message });
   }
 };
 
@@ -771,55 +803,98 @@ export const getBookByISBN = async (req, res) => {
 
     if (!book) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'Book not found.'
+        status: "fail",
+        message: "Book not found.",
       });
     }
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: {
-        book
-      }
+        book,
+      },
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
 
-export const getUserBasedRecommendations = async (req, res) => {
-  const userId = req.user.id;
-  const { limit = 20, min_rating_threshold = 1.0 } = req.body;
+// export const getUserBasedRecommendations = async (req, res) => {
+//   const userId = req.user.id;
+//   const { limit = 20, min_rating_threshold = 1.0 } = req.body;
 
+//   try {
+//     const response = await axios.post(
+//       `${FASTAPI_URL}/recommend/user`,
+//       { user_id: userId, limit, min_rating_threshold }
+//     );
+
+//     const recs = response.data;
+//     const detailedRecs = [];
+//     const isbnList = [];
+
+//     for (const { isbn } of recs) {
+//       const book = await getBookDetails(isbn);
+//       if (book) {
+//         detailedRecs.push(book);
+//         isbnList.push(isbn);
+//       }
+//     }
+
+//     const user = await User.findById(userId).select('recommendation');
+//     user.recommendation.userbased = isbnList;
+//     await user.save();
+
+//     return res.status(200).json({ status: 'success', data: detailedRecs });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ status: 'error', message: err.message });
+//   }
+// };
+
+export const getUserBasedRecommendations = async (req, res, next) => {
   try {
-    const response = await axios.post(
-      `${FASTAPI_URL}/recommend/user`,
-      { user_id: userId, limit, min_rating_threshold }
-    );
+    const userId = req.user.id; // assuming auth middleware sets req.user
 
-    const recs = response.data;
-    const detailedRecs = [];
-    const isbnList = [];
-
-    for (const { isbn } of recs) {
-      const book = await getBookDetails(isbn);
-      if (book) {
-        detailedRecs.push(book);
-        isbnList.push(isbn);
-      }
+    // 1) Load user document
+    const user = await User.findById(userId).select("recommendation.userbased");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "User not found." });
     }
 
-    const user = await User.findById(userId).select('recommendation');
-    user.recommendation.userbased = isbnList;
-    await user.save();
+    const isbns = user.recommendation.userbased;
 
-    return res.status(200).json({ status: 'success', data: detailedRecs });
+    // 2) Check if there are any recommendations
+    if (!isbns || isbns.length === 0) {
+      return res.status(204).json({
+        status: "success",
+        message:
+          "No recommendations yet. Please rate more books to get recommendations.",
+      });
+    }
+
+    // 3) Fetch book details for each ISBN
+    const books = await Book.find({ isbn10: { $in: isbns } }).select("-__v");
+
+    // 4) Preserve order of isbns
+    const bookMap = books.reduce((acc, book) => {
+      acc[book.isbn10] = book;
+      return acc;
+    }, {});
+
+    const orderedBooks = isbns
+      .map((isbn) => bookMap[isbn])
+      .filter((b) => b != null);
+
+    // 5) Return full book objects
+    return res.status(200).json({ status: "success", data: orderedBooks });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ status: 'error', message: err.message });
+    return next(err);
   }
 };
 
@@ -828,32 +903,31 @@ export const getRandomUnratedBooks = async (req, res) => {
     const userId = req.user.id; // assuming you have user ID on req.user
 
     // 1. Find all ISBNs this user has rated
-    const ratedISBNs = await Rating.find({ 'User-ID': userId })
-      .distinct('ISBN');
+    const ratedISBNs = await Rating.find({ "User-ID": userId }).distinct(
+      "ISBN"
+    );
 
     // 2. Aggregate on Book to exclude those ISBNs and pick a random sample
     const randomBooks = await Book.aggregate([
       { $match: { _id: { $nin: ratedISBNs } } },
-      { $sample: { size: 20 } }
+      { $sample: { size: 20 } },
     ]);
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       results: randomBooks.length,
       data: {
-        books: randomBooks
-      }
+        books: randomBooks,
+      },
     });
   } catch (err) {
-    console.error('Error fetching random unrated books:', err);
+    console.error("Error fetching random unrated books:", err);
     res.status(500).json({
-      status: 'error',
-      message: 'An error occurred while fetching books.'
+      status: "error",
+      message: "An error occurred while fetching books.",
     });
   }
 };
-
-
 
 export const upsertReview = async (req, res) => {
   const userId = req.user.id;
@@ -861,18 +935,18 @@ export const upsertReview = async (req, res) => {
 
   if (!isbn || !review) {
     return res.status(400).json({
-      status: 'fail',
-      message: 'Both isbn and review are required.'
+      status: "fail",
+      message: "Both isbn and review are required.",
     });
   }
 
   try {
     // Fetch user's name
-    const user = await User.findById(userId).select('fullName');
+    const user = await User.findById(userId).select("fullName");
     if (!user) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'User not found.'
+        status: "fail",
+        message: "User not found.",
       });
     }
 
@@ -882,28 +956,27 @@ export const upsertReview = async (req, res) => {
       {
         $set: {
           review,
-          userName: user.fullName
-        }
+          userName: user.fullName,
+        },
       },
       {
         new: true,
         upsert: true,
-        setDefaultsOnInsert: true
+        setDefaultsOnInsert: true,
       }
     );
 
     res.status(200).json({
-      status: 'success',
-      data: updatedReview
+      status: "success",
+      data: updatedReview,
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
-
 
 export const getReviewsByBook = async (req, res) => {
   const userId = req.user.id;
@@ -913,15 +986,16 @@ export const getReviewsByBook = async (req, res) => {
 
   try {
     // 1) Fetch the user's own review (if any)
-    const userReviewDoc = await Review.findOne({ user: userId, isbn })
-      .select('userName review createdAt updatedAt');
+    const userReviewDoc = await Review.findOne({ user: userId, isbn }).select(
+      "userName review createdAt updatedAt"
+    );
 
     // 2) Fetch other reviews, excluding the user's
     const otherReviews = await Review.find({ isbn, user: { $ne: userId } })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('userName review createdAt updatedAt');
+      .select("userName review createdAt updatedAt");
 
     // 3) Build the combined list
     const reviews = [];
@@ -929,42 +1003,44 @@ export const getReviewsByBook = async (req, res) => {
     if (userReviewDoc) {
       reviews.push({
         ...userReviewDoc.toObject(),
-        reviewed: true
+        reviewed: true,
       });
     }
 
-    otherReviews.forEach(doc => {
+    otherReviews.forEach((doc) => {
       reviews.push({
         ...doc.toObject(),
-        reviewed: false
+        reviewed: false,
       });
     });
 
     // 4) Total count for pagination (only counts others for page calc,
     //    since user's review is always shown separately)
-    const totalOthers = await Review.countDocuments({ isbn, user: { $ne: userId } });
+    const totalOthers = await Review.countDocuments({
+      isbn,
+      user: { $ne: userId },
+    });
     const totalPages = Math.ceil(totalOthers / limit);
 
     res.status(200).json({
-      status: 'success',
+      status: "success",
       data: {
         reviews,
         pagination: {
           page,
           limit,
           totalPages,
-          total: totalOthers + (userReviewDoc ? 1 : 0)
-        }
-      }
+          total: totalOthers + (userReviewDoc ? 1 : 0),
+        },
+      },
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
-
 
 export const deleteReview = async (req, res) => {
   const userId = req.user.id;
@@ -974,21 +1050,21 @@ export const deleteReview = async (req, res) => {
     const reviewDoc = await Review.findOne({ user: userId, isbn });
     if (!reviewDoc) {
       return res.status(404).json({
-        status: 'fail',
-        message: 'Review not found or you do not have permission to delete it.'
+        status: "fail",
+        message: "Review not found or you do not have permission to delete it.",
       });
     }
 
     await reviewDoc.remove();
 
     res.status(200).json({
-      status: 'success',
-      message: 'Review deleted successfully.'
+      status: "success",
+      message: "Review deleted successfully.",
     });
   } catch (err) {
     res.status(500).json({
-      status: 'error',
-      message: err.message
+      status: "error",
+      message: err.message,
     });
   }
 };
