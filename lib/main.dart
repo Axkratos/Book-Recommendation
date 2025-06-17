@@ -11,7 +11,6 @@ import 'package:bookrec/pages/dashboard_discussion.dart';
 import 'package:bookrec/pages/dashboard_trending.dart';
 import 'package:bookrec/pages/isLoading.dart';
 import 'package:bookrec/pages/likeBook.dart';
-import 'package:bookrec/pages/mood.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
 import 'package:bookrec/pages/verifyEmail.dart';
@@ -100,7 +99,6 @@ final GoRouter _router = GoRouter(
           },
         ),
 
-        GoRoute(path: '/mood', builder: (context, state) => const Mood()),
         ShellRoute(
           builder: (BuildContext context, GoRouterState state, Widget child) {
             return DashboardPage(child: child); // This is your shared layout

@@ -1,4 +1,4 @@
-import 'package:bookrec/components/VintageBookCard.dart';
+import 'package:bookrec/components/VintageBookCard.dart' as VintageBookCard;
 import 'package:bookrec/components/similarBooks/similarBookSection.dart';
 import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/provider/authprovider.dart';
@@ -78,7 +78,7 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            VintageBookCard(
+                            VintageBookCard.Vintagebookcard(
                               book: Map<String, dynamic>.from(book_info),
                             ),
                             Expanded(
@@ -121,7 +121,7 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: VintageBookCard(
+                      child: VintageBookCard.Vintagebookcard(
                         book: Map<String, dynamic>.from(book_info),
                       ),
                     ),
