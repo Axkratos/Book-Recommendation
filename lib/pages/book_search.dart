@@ -27,11 +27,11 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
 
   double? _selectedRating;
   String? _selectedGenre;
-  int? _selectedYear;
+  String? _selectedYear;
 
   int _currentPage = 1;
   int _totalItems = 0;
-  final int _itemsPerPage = 15;
+  final int _itemsPerPage = 20;
 
   final List<double> _ratingOptions = [5.0, 4.0, 3.0, 2.0];
   final List<String> _genreOptions = [
@@ -41,10 +41,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
     'Romance',
     'History',
   ];
-  final List<int> _yearOptions = List.generate(
-    60,
-    (index) => DateTime.now().year - index,
-  );
+  final List<String> _yearOptions = ['desc', 'asc'];
 
   late Future<List<Book>> _futureBooks;
 
@@ -201,7 +198,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                   },
                 ),
                 const SizedBox(width: 8),
-                _buildVintageDropdown<int>(
+                _buildVintageDropdown<String>(
                   hint: "Year",
                   value: _selectedYear,
                   items:
@@ -209,7 +206,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                           .map(
                             (year) => DropdownMenuItem(
                               value: year,
-                              child: Text(year.toString()),
+                              child: Text(year),
                             ),
                           )
                           .toList(),
@@ -264,20 +261,46 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                 }
 
                 final books = snapshot.data!;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
-                    childAspectRatio: 3.5,
-                  ),
-                  itemCount: books.length,
-                  itemBuilder: (context, index) {
-                    final book = books[index];
-                    final rank =
-                        index + 1 + ((_currentPage - 1) * _itemsPerPage);
-                    return BookGridCard(book: book, rank: rank);
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    double width = constraints.maxWidth;
+                    int crossAxisCount;
+                    double childAspectRatio;
+
+                    if (width >= 1300) {
+                      // Large Desktop
+                      crossAxisCount = 5;
+                      childAspectRatio = 2;
+                    } else if (width >= 1000) {
+                      // Desktop
+                      crossAxisCount = 5;
+                      childAspectRatio = 1.2;
+                    } else if (width >= 700) {
+                      // Tablet
+                      crossAxisCount = 3;
+                      childAspectRatio = 1.5;
+                    } else {
+                      // Mobile
+                      crossAxisCount = 1;
+                      childAspectRatio = 3.5;
+                    }
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 16.0,
+                        mainAxisSpacing: 16.0,
+                        childAspectRatio: childAspectRatio,
+                      ),
+                      itemCount: books.length,
+                      itemBuilder: (context, index) {
+                        final book = books[index];
+                        final rank =
+                            index + 1 + ((_currentPage - 1) * _itemsPerPage);
+                        return BookGridCard(book: book, rank: rank);
+                      },
+                    );
                   },
                 );
               },
