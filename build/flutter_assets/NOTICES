@@ -5154,6 +5154,7 @@ file_selector_windows
 flutter_lints
 flutter_shaders
 go_router
+palette_generator
 path_provider
 path_provider_android
 path_provider_foundation

@@ -1,20 +1,18 @@
 import 'package:bookrec/components/VintageBookCard.dart' as VintageBookCard;
 import 'package:bookrec/components/similarBooks/similarBookSection.dart';
-import 'package:bookrec/dummy/book.dart';
+//import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/services/booksapi.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class BookAndSimilar extends StatefulWidget {
   final String bookId;
   final String title;
-  BookAndSimilar({
-    super.key,
-    //required this.screenHeight,
-    required this.bookId,
-    required this.title,
-  });
+  const BookAndSimilar({super.key, required this.bookId, required this.title});
 
   @override
   State<BookAndSimilar> createState() => _BookAndSimilarState();
@@ -22,15 +20,7 @@ class BookAndSimilar extends StatefulWidget {
 
 class _BookAndSimilarState extends State<BookAndSimilar> {
   BooksInfo booksInfo = BooksInfo();
-
-  late Future<Map> bookDetails;
-  Future<Map<String, dynamic>> fetchBookDetails(String bookId) async {
-    // Simulate a network call to fetch book details
-    final data = await booksInfo.getSingleBook(bookId);
-    final book = data['book'];
-    print('Book Details Future: $book');
-    return book; // Replace with actual API call
-  }
+  late Future<Map<String, dynamic>> bookDetails;
 
   @override
   void initState() {
@@ -39,109 +29,407 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
     print('Book ID: ${widget.bookId}');
   }
 
+  Future<Map<String, dynamic>> fetchBookDetails(String bookId) async {
+    final data = await booksInfo.getSingleBook(bookId);
+    return data['book'];
+  }
+
+  Future<List<Map<String, dynamic>>> similar_books(
+    String title,
+    String token,
+  ) async {
+    final similarBook = await booksInfo.getSimilarBook(title, token);
+    return similarBook;
+  }
+
   @override
   Widget build(BuildContext context) {
     final ProviderUser = Provider.of<UserProvider>(context);
-    Future<List<Map<String, dynamic>>> similar_books(String title) async {
-      // Simulate a network call to fetch similar books
-      final _similarBook = await booksInfo.getSimilarBook(
-        title,
-        ProviderUser.token,
-      );
-      return _similarBook;
-    }
 
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double screenHeight = MediaQuery.of(context).size.height;
-    return FutureBuilder(
+    return FutureBuilder<Map<String, dynamic>>(
       future: bookDetails,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data == null) {
-          return Center(child: Text('No book details found.'));
+          return const Center(child: Text('No book details found.'));
         } else {
           final book_info = snapshot.data!;
           return LayoutBuilder(
             builder: (context, constraints) {
-              //double cardWidth = constraints.maxWidth;
               if (constraints.maxWidth > 900) {
-                // Desktop
+                // Desktop Layout
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 100),
                   child: ListView(
                     children: [
-                      SizedBox(
-                        height: screenHeight * 0.8,
+                      Container(
+                        //height: 1100,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            VintageBookCard.Vintagebookcard(
-                              book: Map<String, dynamic>.from(book_info),
+                            // Flexible ensures the Vintage card doesn't cause overflow
+                            Flexible(
+                              flex: 5, // Give more space to the book card
+                              child: VintageBookCard.Vintagebookcard(
+                                book: Map<String, dynamic>.from(book_info),
+                              ),
                             ),
+                            const SizedBox(width: 20),
                             Expanded(
-                              child: FutureBuilder(
-                                future: similar_books(widget.title),
+                              flex: 2, // Less space for the similar books list
+                              child: FutureBuilder<List<Map<String, dynamic>>>(
+                                future: similar_books(
+                                  widget.title,
+                                  ProviderUser.token,
+                                ),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
-                                    return Center(
+                                    return const Center(
                                       child: CircularProgressIndicator(),
                                     );
-                                  } else if (snapshot.hasError) {
-                                    return Center(
-                                      child: Text('Error: ${snapshot.error}'),
-                                    );
-                                  } else if (!snapshot.hasData ||
-                                      snapshot.data == null) {
-                                    return Center(
-                                      child: Text('No similar books found.'),
-                                    );
-                                  } else {
-                                    final similar_books = snapshot.data;
-                                    print('Similar Books: $similar_books');
-                                    return SimilarBooksSection(
-                                      isSmallScreen: false,
-                                      similarBooks: similar_books ?? [],
+                                  } else if (snapshot.hasData &&
+                                      snapshot.data!.isNotEmpty) {
+                                    return Container(
+                                      height: 700, // Fixed height for desktop
+                                      child: SimilarBooksSection(
+                                        isSmallScreen: false,
+                                        similarBooks: snapshot.data ?? [],
+                                      ),
                                     );
                                   }
+                                  // Gracefully handle error or no data
+                                  return const Center(
+                                    child: Text('No similar books found.'),
+                                  );
                                 },
                               ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 40),
+                      // --- 2. ADD COMMENTS SECTION for desktop ---
+                      CommentsSection(bookId: widget.bookId),
+                      const SizedBox(height: 50), // Bottom padding
                     ],
                   ),
                 );
               } else {
+                // Mobile Layout
                 return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: VintageBookCard.Vintagebookcard(
-                        book: Map<String, dynamic>.from(book_info),
-                      ),
+                    VintageBookCard.Vintagebookcard(
+                      book: Map<String, dynamic>.from(book_info),
                     ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 200,
-                      child: SimilarBooksSection(
-                        isSmallScreen: true,
-                        similarBooks: [],
-                      ),
+                    const SizedBox(height: 30),
+                    // Fetch and display similar books for mobile as well
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: similar_books(widget.title, ProviderUser.token),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                          return SimilarBooksSection(
+                            isSmallScreen: true,
+                            similarBooks: snapshot.data ?? [],
+                          );
+                        }
+                        return const SizedBox.shrink(); // Don't show if empty or error
+                      },
                     ),
+                    const SizedBox(height: 30),
+                    // --- 3. ADD COMMENTS SECTION for mobile ---
+                    CommentsSection(bookId: widget.bookId),
+                    const SizedBox(height: 30), // Bottom padding
                   ],
                 );
               }
             },
           );
         }
-
-        //final similar_books = bookDetails['similar_books'] ?? [];
       },
+    );
+  }
+}
+
+class Comment {
+  final String avatarUrl;
+  final String username;
+  final String text;
+  final String timestamp;
+
+  Comment({
+    required this.avatarUrl,
+    required this.username,
+    required this.text,
+    required this.timestamp,
+  });
+}
+
+class CommentsSection extends StatefulWidget {
+  final String bookId;
+
+  const CommentsSection({super.key, required this.bookId});
+
+  @override
+  State<CommentsSection> createState() => _CommentsSectionState();
+}
+
+class _CommentsSectionState extends State<CommentsSection> {
+  final TextEditingController _commentController = TextEditingController();
+
+  List<Comment> _comments = [];
+  final String baseUrl = dotenv.env['baseUrl']!;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchComments();
+  }
+
+  Future<void> _fetchComments() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token;
+    final url = Uri.parse(
+      '$baseUrl/api/v1/books/review/book/${widget.bookId}?page=1&limit=10',
+    );
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final reviews = data['data']['reviews'] as List;
+        setState(() {
+          _comments =
+              reviews.map((review) {
+                return Comment(
+                  avatarUrl:
+                      'https://i.pravatar.cc/150?u=${review['userName']}',
+                  username: review['userName'] ?? 'Anonymous',
+                  text: review['review'] ?? '',
+                  timestamp: _formatTimestamp(review['createdAt']),
+                );
+              }).toList();
+        });
+      }
+    } catch (e) {
+      // Optionally handle error
+    }
+  }
+
+  String _formatTimestamp(String isoString) {
+    final date = DateTime.tryParse(isoString);
+    if (date == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays > 0)
+      return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    if (diff.inHours > 0)
+      return '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+    if (diff.inMinutes > 0)
+      return '${diff.inMinutes} minute${diff.inMinutes > 1 ? 's' : ''} ago';
+    return 'Just now';
+  }
+
+  Future<void> _addComment() async {
+    final reviewText = _commentController.text.trim();
+    if (reviewText.isEmpty) return;
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token;
+    final isbn = widget.bookId;
+
+    final url = Uri.parse('$baseUrl/api/v1/books/review');
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'isbn': isbn, 'review': reviewText}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _commentController.clear();
+        FocusScope.of(context).unfocus();
+        await _fetchComments(); // Refresh comments after posting
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your comment has been posted!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to post comment.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Text(
+            'Reader Reviews & Comments',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // "Add a comment" input field
+          _buildAddCommentField(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Divider(),
+          ),
+
+          // List of comments
+          ListView.separated(
+            shrinkWrap: true, // Crucial for nesting in another scroll view
+            physics:
+                const NeverScrollableScrollPhysics(), // Disables this ListView's scrolling
+            itemCount: _comments.length,
+            itemBuilder: (context, index) {
+              return _CommentTile(comment: _comments[index]);
+            },
+            separatorBuilder: (context, index) => const Divider(height: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget for the text input field and submit button
+  Widget _buildAddCommentField() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const CircleAvatar(
+          child: Icon(Icons.person_outline),
+          backgroundColor: Color.fromARGB(255, 230, 230, 230),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextField(
+            controller: _commentController,
+            maxLines: null, // Makes the text field expandable
+            decoration: InputDecoration(
+              hintText: 'Share your thoughts on this book...',
+              filled: true,
+              fillColor: const Color(0xFFF5F5F5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.send_rounded),
+          onPressed: _addComment,
+          tooltip: 'Submit Comment',
+          style: IconButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Helper widget to display a single comment cleanly
+class _CommentTile extends StatelessWidget {
+  final Comment comment;
+  const _CommentTile({required this.comment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(backgroundImage: NetworkImage(comment.avatarUrl)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    comment.username,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '• ${comment.timestamp}',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                comment.text,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.4,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
