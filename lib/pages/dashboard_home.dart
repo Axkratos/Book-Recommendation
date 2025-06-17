@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bookrec/components/VintageButton.dart';
+import 'package:bookrec/components/book_grid.dart';
 import 'package:bookrec/components/chat_ai.dart';
 import 'package:bookrec/components/llmRec.dart';
 import 'package:bookrec/dummy/book.dart';
@@ -33,14 +34,13 @@ class DashboardHome extends StatelessWidget {
                 flex: 3,
                 child: ListView(
                   children: [
-                    Container(height: 250, child: AIPromptSection()),
-                    SizedBox(height: screenHeight * 0.04),
                     Container(
                       height: MediaQuery.of(context).size.height * 0.05,
                       child: dashboard_title(title: 'Recommended Books'),
                     ),
 
                     SizedBox(height: 20),
+
                     Text(
                       'Here are some books we think you will love based on your past reads,preferences, and interests.',
                       style: vintageTextStyle.copyWith(
@@ -51,6 +51,8 @@ class DashboardHome extends StatelessWidget {
                     SizedBox(height: 20),
                     book_card_section(type: 'item'),
 
+                    SizedBox(height: screenHeight * 0.04),
+                    Container(height: 250, child: AIPromptSection()),
                     SizedBox(height: screenHeight * 0.04),
                     Text(
                       'Here are some books, that people with similar interests to you have read and loved.',
@@ -65,7 +67,6 @@ class DashboardHome extends StatelessWidget {
                   ],
                 ),
               ),
-              Expanded(child: BookAIChatWidget()),
             ],
           ),
         ),
@@ -111,15 +112,18 @@ class book_card_section extends StatelessWidget {
             padding: const EdgeInsets.only(top: 20),
             child: GridView.builder(
               shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 0.6,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 3,
                 mainAxisSpacing: 5,
                 crossAxisSpacing: 5,
               ),
               itemCount: books.length,
               itemBuilder: (context, index) {
-                return dashboard_book_card(books: books[index]);
+                final __book = books[index];
+                final rank = index + 1; // Rank starts from 1
+
+                return BookGridCard(book: __book, rank: rank);
               },
             ),
           ),
