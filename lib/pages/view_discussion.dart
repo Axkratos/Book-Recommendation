@@ -18,6 +18,7 @@ class Comment {
   final String avatarUrl;
   final String content;
   final String timeAgo;
+  final bool commented;
 
   Comment({
     required this.id,
@@ -25,6 +26,7 @@ class Comment {
     required this.avatarUrl,
     required this.content,
     required this.timeAgo,
+    required this.commented,
   });
 }
 
@@ -69,13 +71,17 @@ Future<List<Comment>> fetchCommentsForForum(
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       final List<dynamic> data = json['data'];
+
       return data.map((item) {
+        final user = item['user'];
         return Comment(
           id: item['_id'],
-          authorName: item['userId']?['fullName'] ?? 'Anonymous',
+          authorName: user['fullName'] ?? 'Anonymous',
           avatarUrl: 'https://i.pravatar.cc/150', // No avatar in response
           content: item['comment'],
           timeAgo: timeAgoFromIso(item['createdAt']),
+          commented:
+              item['commented'] ?? false, // Assuming 'commented' is a boolean
         );
       }).toList();
     } else {
@@ -493,6 +499,8 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                                 avatarUrl: 'https://i.pravatar.cc/150',
                                 content: _commentController.text,
                                 timeAgo: 'just now',
+                                commented:
+                                    true, // Assuming the comment is posted
                               ),
                             );
                           });
@@ -573,61 +581,70 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               final comment = _comments[index];
               return CommentWidget(
                 comment: comment,
-                onDelete: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder:
-                        (ctx) => AlertDialog(
-                          title: const Text('Delete Comment'),
-                          content: const Text(
-                            'Are you sure you want to delete this comment?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text(
-                                'Delete',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                        ),
-                  );
-                  if (confirm == true) {
-                    final success = await deleteComment(
-                      comment.id,
-                      providerUser.token,
-                    );
-                    if (success) {
-                      setState(() {
-                        _comments.removeAt(index);
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: vintagePrimaryText,
-                          content: Text(
-                            'Comment deleted.',
-                            style: GoogleFonts.montserrat(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.red,
-                          content: Text(
-                            'Failed to delete comment.',
-                            style: GoogleFonts.montserrat(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                },
+                onDelete:
+                    comment.commented
+                        ? () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (ctx) => AlertDialog(
+                                  title: const Text('Delete Comment'),
+                                  content: const Text(
+                                    'Are you sure you want to delete this comment?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.of(ctx).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.of(ctx).pop(true),
+                                      child: const Text(
+                                        'Delete',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          if (confirm == true) {
+                            final success = await deleteComment(
+                              comment.id,
+                              providerUser.token,
+                            );
+                            if (success) {
+                              setState(() {
+                                _comments.removeAt(index);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: vintagePrimaryText,
+                                  content: Text(
+                                    'Comment deleted.',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Failed to delete comment.',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                        : null,
                 onEdit: () async {
                   final controller = TextEditingController(
                     text: comment.content,
@@ -673,6 +690,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                           avatarUrl: comment.avatarUrl,
                           content: updated,
                           timeAgo: 'just now',
+                          commented: comment.commented,
                         );
                       });
                       ScaffoldMessenger.of(context).showSnackBar(

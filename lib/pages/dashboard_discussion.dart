@@ -54,15 +54,17 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
   Future<void> _loadPage(int page) async {
     setState(() => _isLoading = true);
+
     try {
       final response = await discuss.fetchForums(page: page);
+      print('Fetched forums for page $response');
       setState(() {
         _forums = response.forums;
         _currentPage = page;
         _totalPages = response.totalPages;
       });
     } catch (e) {
-      debugPrint('Error fetching forums: $e');
+      debugPrint('Error fetching forums1: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -136,7 +138,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                   onTap: () => context.go('/view/${forum.id}'),
                                   child: ModernFeedCard(
                                     reviewData: {
-                                      'id': forum.id ?? 'Unknown ID',
+                                      'id': forum.id! ?? 'Unknown ID',
                                       'title':
                                           forum.discussionTitle ?? 'No Title',
                                       'book': forum.bookTitle ?? 'Unknown Book',

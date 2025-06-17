@@ -48,7 +48,7 @@ class Discussapi {
       //print('Response body: ${response.body}'); // Debugging line
       final data = json.decode(response.body);
       List forums = data['data'];
-      print('Forums fetched: $forums'); // Debugging line
+      print('Forums fetched: ${data['totalPages']}'); // Debugging line
       return ForumPageResponse(
         forums: forums.map((json) => Forum.fromJson(json)).toList(),
         totalPages: data['totalPages'],
@@ -87,7 +87,6 @@ class Discussapi {
       return 'failed';
     }
   }
-  
 }
 
 class ForumPageResponse {
