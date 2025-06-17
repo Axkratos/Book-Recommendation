@@ -6,6 +6,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'dart:html' as html;
+
+void navigateToReactPage() {
+  html.window.location.href = 'https://example.com/react-page';
+}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key, required this.child}) : super(key: key);
@@ -80,7 +85,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   context.go('/'); // Redirect to sign-in page
                   break;
                 case 5:
-                  context.go('/reader'); // Trending
+                  html.window.location.href = 'http://localhost:5173';
                   break; // Trending
 
                 // Trending

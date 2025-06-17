@@ -2,7 +2,6 @@ import 'package:bookrec/components/book_grid.dart';
 import 'package:bookrec/components/star.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/pages/HomePage.dart';
-import 'package:bookrec/pages/bookBuddy.dart';
 import 'package:bookrec/pages/book_and_similar.dart';
 import 'package:bookrec/pages/book_search.dart';
 import 'package:bookrec/pages/dashboard.dart';
@@ -43,10 +42,7 @@ final GoRouter _router = GoRouter(
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
-        GoRoute(
-          path: '/reader',
-          builder: (context, state) => BookBuddyApp(),
-        ),
+
         GoRoute(
           path: '/like',
           builder: (context, state) => BookSelectionPage(),
