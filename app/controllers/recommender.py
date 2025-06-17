@@ -473,3 +473,18 @@ def recommend_books_logic(text: str) -> List[Book]:
     except Exception as e:
         # bubble up as an HTTP error
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def fold_in_user(ratings: Dict[str, float]) -> np.ndarray:
+    n_items = len(models.item_idx_map)
+    row = np.zeros(n_items, dtype=float)
+    for isbn, val in ratings.items():
+        idx = models.item_idx_map.get(isbn)
+        if idx is not None:
+            row[idx] = val
+    V = models.svd_model.components_.T
+    sigma = models.svd_model.singular_values_
+    u = row.dot(V / sigma)
+    return u
+
+

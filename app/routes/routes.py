@@ -5,9 +5,9 @@ import logging
 from app.controllers.recommender import (
     models, BookRec, ItemRecRequest, UserRecRequest, 
     retrain_hybrid, get_content_recommendations, get_collaborative_recommendations,
-    find_book_by_title,Query, Book, recommend_books_logic
+    find_book_by_title,Query, Book, recommend_books_logic,fold_in_user
 )
-from app.models.database import get_user_ratings
+from app.models.database import get_user_ratings,load_all_books,load_user_ratings
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -330,6 +330,26 @@ async def recommend_books(query: Query):
     """
     return recommend_books_logic(query.text)
 
+
+
+@router.get("/recommend/{user_id}", response_model=List[str])
+async def recommend_for_user(user_id: str, top_n: int = 12):
+    ratings_list = await load_user_ratings(user_id)
+    if not ratings_list:
+        raise HTTPException(status_code=404, detail=f"No ratings found for user {user_id}")
+    user_dict = {r['isbn10']: r['rating'] for r in ratings_list}
+    u = fold_in_user(user_dict).reshape(1, -1)
+    u_proj = u * models.svd_model.singular_values_
+    dists, idxs = models.item_model.kneighbors(u_proj, n_neighbors=top_n + len(user_dict))
+    recommendations = []
+    for idx in idxs.flatten():
+        isbn = models.idx_item_map[idx]
+        if isbn not in user_dict:
+            recommendations.append(isbn)
+        if len(recommendations) >= top_n:
+            break
+       
+    return recommendations
 
 @router.get("/health")
 async def health_check():

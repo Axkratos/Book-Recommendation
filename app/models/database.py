@@ -2,7 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Dict, List
 import logging
 import dotenv
-
+from fastapi import  HTTPException
 # Load environment variables from .env file
 dotenv.load_dotenv()
 MONGO_URI= dotenv.get_key(".env", "MONGO_URI")
@@ -87,3 +87,16 @@ async def get_user_ratings(user_id: str) -> Dict[str, float]:
     except Exception as e:
         logger.error(f"Error getting user ratings: {e}")
         raise Exception(f"Failed to get user ratings: {str(e)}")
+async def load_user_ratings(user_id: str) -> List[Dict[str, float]]:
+    try:
+        cursor = db[RATINGS_COLLECTION].find({'User-ID': user_id})
+        user_ratings = []
+        async for rating in cursor:
+            user_ratings.append({
+                'isbn10': str(rating.get('ISBN', '')),
+                'rating': float(rating.get('Book-Rating', 0))
+            })
+        return user_ratings
+    except Exception as e:
+        logger.error(f"Error loading user ratings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load user ratings: {e}")
