@@ -1,6 +1,6 @@
 class Forum {
   final String id;
-  final String userId;
+  final String? userId;
   final String isbn;
   final String bookTitle;
   final String discussionTitle;
@@ -20,15 +20,21 @@ class Forum {
   });
 
   factory Forum.fromJson(Map<String, dynamic> json) {
+    final userJson = json['userId'];
+    final extractedUserId =
+        userJson != null && userJson is Map<String, dynamic>
+            ? userJson['_id'] ?? 'Unknown Author'
+            : 'Unknown Author';
+
     return Forum(
-      id: json['_id'],
-      userId: json['userId']['_id'],
-      isbn: json['ISBN'],
-      bookTitle: json['bookTitle'],
-      discussionTitle: json['discussionTitle'],
-      discussionBody: json['discussionBody'],
-      likeCount: json['likeCount'],
-      createdAt: json['createdAt'],
+      id: json['_id'] ?? '',
+      userId: extractedUserId,
+      isbn: json['ISBN'] ?? '',
+      bookTitle: json['bookTitle'] ?? '',
+      discussionTitle: json['discussionTitle'] ?? '',
+      discussionBody: json['discussionBody'] ?? '',
+      likeCount: json['likeCount'] ?? 0,
+      createdAt: json['createdAt'] ?? '',
     );
   }
 }
