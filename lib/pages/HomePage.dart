@@ -83,7 +83,6 @@ class Homepage extends StatelessWidget {
                 /// --- Right: Buttons ---
                 Row(
                   children: [
-                    _topButton(FontAwesomeIcons.faceDizzy, 'Moods', context),
                     //_topButton(FontAwesomeIcons.solidStar, 'Like you', context),
                     //_topButton(FontAwesomeIcons.robot, 'Ai', context),
                     _signupButton(context),
