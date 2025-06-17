@@ -8,6 +8,7 @@ import 'package:bookrec/components/VintageButton.dart';
 import 'package:bookrec/components/vintage_feed.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:bookrec/theme/dashboard_title.dart';
+import 'package:bookrec/pages/dashboard_home.dart'; // <-- Add this line
 
 /// Safely decode JSON content into a List<dynamic> for Quill
 dynamic safeDecode(dynamic body) {
@@ -90,83 +91,94 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
     return SelectionArea(
       child: Scaffold(
-        backgroundColor: vintageCream,
-        body: Padding(
-          padding: EdgeInsets.only(top: screenHeight * 0.04),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        backgroundColor: Color(0xFFF7F2E9),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 40.0,
+                vertical: 50.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  dashboard_title(title: 'Discussion/Forum'),
-                  VintageButton(
-                    text: '+ Create Discussion',
-                    onPressed:
-                        () => context.go('/dashboard/discussion/writereview'),
+                  /// Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SectionHeader(title: 'Discussion / Forum'),
+                      VintageButton(
+                        text: '+ Create Discussion',
+                        onPressed:
+                            () =>
+                                context.go('/dashboard/discussion/writereview'),
+                      ),
+                    ],
                   ),
+                  SizedBox(height: 24), // Match spacing from dashboard_home
+                  /// Forum List
+                  Expanded(
+                    child:
+                        _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _forums.isEmpty
+                            ? const Center(child: Text('No discussions found.'))
+                            : ListView.builder(
+                              itemCount: _forums.length,
+                              itemBuilder: (context, index) {
+                                final forum = _forums[index];
+                                final content = safeDecode(
+                                  forum.discussionBody,
+                                );
+
+                                return GestureDetector(
+                                  onTap: () => context.go('/view/${forum.id}'),
+                                  child: ModernFeedCard(
+                                    reviewData: {
+                                      'id': forum.id ?? 'Unknown ID',
+                                      'title':
+                                          forum.discussionTitle ?? 'No Title',
+                                      'book': forum.bookTitle ?? 'Unknown Book',
+                                      'author':
+                                          forum.userId ?? 'Unknown Author',
+                                      'cover':
+                                          'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+                                      'content': content,
+                                      'upvotes': forum.likeCount.toString(),
+                                      'comments': '900',
+                                      'timeAgo':
+                                          forum.createdAt != null
+                                              ? DateTime.now()
+                                                      .difference(
+                                                        DateTime.parse(
+                                                          forum.createdAt!,
+                                                        ),
+                                                      )
+                                                      .inDays
+                                                      .toString() +
+                                                  ' days ago'
+                                              : 'Unknown time',
+                                      'reason': 'Recommended for you',
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                  ),
+
+                  /// Pagination
+                  if (_totalPages > 1)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: _buildPaginationButtons(),
+                      ),
+                    ),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.02),
-
-              /// Forum List
-              Expanded(
-                child:
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _forums.isEmpty
-                        ? const Center(child: Text('No discussions found.'))
-                        : ListView.builder(
-                          itemCount: _forums.length,
-                          itemBuilder: (context, index) {
-                            final forum = _forums[index];
-                            final content = safeDecode(forum.discussionBody);
-
-                            return GestureDetector(
-                              onTap: () => context.go('/view/${forum.id}'),
-                              child: VintageFeedCard(
-                                reviewData: {
-                                  'id': forum.id ?? 'Unknown ID',
-                                  'title': forum.discussionTitle ?? 'No Title',
-                                  'book': forum.bookTitle ?? 'Unknown Book',
-                                  'author': forum.userId ?? 'Unknown Author',
-                                  'cover':
-                                      'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
-
-                                  'content': content,
-                                  'upvotes': forum.likeCount.toString(),
-                                  'comments': '900',
-                                  'timeAgo':
-                                      forum.createdAt != null
-                                          ? DateTime.now()
-                                                  .difference(
-                                                    DateTime.parse(
-                                                      forum.createdAt!,
-                                                    ),
-                                                  )
-                                                  .inDays
-                                                  .toString() +
-                                              ' days ago'
-                                          : 'Unknown time',
-                                  'reason': 'Recommended for you',
-                                },
-                              ),
-                            );
-                          },
-                        ),
-              ),
-
-              /// Pagination
-              if (_totalPages > 1)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: _buildPaginationButtons(),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
