@@ -183,7 +183,6 @@ function processGoogleBooksResponse(data) {
       const finalIsbn10 = isbn10 || generateValidISBN(item.id);
       
       return {
-        _id: finalIsbn10,
         isbn10: finalIsbn10,
         title: cleanText(info.title, 200),
         authors: info.authors.slice(0, 3).join(', '),
@@ -262,7 +261,6 @@ async function processOpenLibraryResponse(data, subject) {
       const isbn10 = details.isbn10 || generateValidISBN(work.key);
       
       const book = {
-        _id: isbn10,
         isbn10: isbn10,
         title: cleanText(work.title, 200),
         authors: work.authors.map(a => a.name).slice(0, 2).join(', '),
@@ -330,26 +328,52 @@ function createEnhancedDescription(work, details, subject) {
   return cleanText(description, 800);
 }
 
+// Clean up existing ObjectId documents before running the update
+async function cleanupExistingObjectIdDocuments() {
+  try {
+    console.log('🧹 Cleaning up existing ObjectId documents...');
+    
+    // Remove documents with ObjectId _id from both models
+    const [trendingDeleted, bookDeleted] = await Promise.all([
+      TrendingBook.deleteMany({ _id: { $type: "objectId" } }),
+      Book.deleteMany({ _id: { $type: "objectId" } })
+    ]);
+    
+    console.log(`✅ Cleanup complete: ${trendingDeleted.deletedCount} trending books, ${bookDeleted.deletedCount} books removed`);
+    
+    return {
+      trending: trendingDeleted.deletedCount,
+      books: bookDeleted.deletedCount
+    };
+  } catch (error) {
+    console.log(`⚠️ Cleanup warning: ${error.message}`);
+    return { trending: 0, books: 0 };
+  }
+}
+
 // Check for existing books to avoid duplicates in both models
 async function checkBookExists(isbn10, title) {
   try {
     const cleanTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
+    // Use raw MongoDB queries to avoid Mongoose casting issues
     const [trendingExists, bookExists] = await Promise.all([
-      TrendingBook.findOne({
+      TrendingBook.collection.findOne({
         $or: [
           { _id: isbn10 },
           { isbn10: isbn10 },
-          { title: { $regex: new RegExp(cleanTitle, 'i') } }
+          { title: { $regex: new RegExp(cleanTitle, 'i') }
+          }
         ]
-      }).lean(),
-      Book.findOne({
+      }),
+      Book.collection.findOne({
         $or: [
           { _id: isbn10 },
           { isbn10: isbn10 },
-          { title: { $regex: new RegExp(cleanTitle, 'i') } }
+          { title: { $regex: new RegExp(cleanTitle, 'i') }
+          }
         ]
-      }).lean()
+      })
     ]);
     
     return trendingExists || bookExists;
@@ -381,9 +405,9 @@ async function saveBooksToModels(books) {
         continue;
       }
       
-      // Prepare consistent book data for both models
+      // Prepare consistent book data for both models - EXPLICITLY SET _id
       const bookData = {
-        _id: bookId,
+        _id: bookId,           // CRITICAL: Explicitly set _id to string ISBN
         isbn10: bookId,
         title: book.title,
         authors: book.authors,
@@ -395,14 +419,16 @@ async function saveBooksToModels(books) {
         ratings_count: book.ratings_count
       };
       
-      // Save to TrendingBook model
+      // Save to TrendingBook model using insertOne to bypass middleware
       try {
-        const existingTrending = await TrendingBook.findById(bookId).lean();
+        // Use raw collection query to avoid casting issues
+        const existingTrending = await TrendingBook.collection.findOne({ _id: bookId });
         if (existingTrending) {
           results.trending.existing++;
           console.log(`📚 Trending book already exists: "${book.title}"`);
         } else {
-          await TrendingBook.create(bookData);
+          // Use insertOne to ensure _id is preserved exactly as provided
+          await TrendingBook.collection.insertOne(bookData);
           results.trending.added++;
           console.log(`✅ Trending saved: "${book.title}" (ID: ${bookId})`);
         }
@@ -416,14 +442,16 @@ async function saveBooksToModels(books) {
         }
       }
       
-      // Save to Book model
+      // Save to Book model using insertOne to bypass middleware
       try {
-        const existingBook = await Book.findById(bookId).lean();
+        // Use raw collection query to avoid casting issues
+        const existingBook = await Book.collection.findOne({ _id: bookId });
         if (existingBook) {
           results.book.existing++;
           console.log(`📖 Book already exists: "${book.title}"`);
         } else {
-          await Book.create(bookData);
+          // Use insertOne to ensure _id is preserved exactly as provided
+          await Book.collection.insertOne(bookData);
           results.book.added++;
           console.log(`✅ Book saved: "${book.title}" (ID: ${bookId})`);
         }
@@ -519,6 +547,10 @@ export async function updateTrendingBooks() {
     // Wait for database connection
     await waitForDatabaseConnection();
     
+    // Clean up existing ObjectId documents first
+    const cleanupResults = await cleanupExistingObjectIdDocuments();
+    console.log(`🧹 Cleanup: ${cleanupResults.trending + cleanupResults.books} old documents removed\n`);
+    
     let allBooks = [];
     
     // Phase 1: Google Books API (Primary source)
@@ -574,7 +606,7 @@ export async function updateTrendingBooks() {
     if (finalBooks.length > 0) {
       const sample = finalBooks[0];
       console.log(`\n📋 Sample Book Structure:`);
-      console.log(`   _id: "${sample._id}"`);
+      console.log(`   _id: "${sample.isbn10}"`);
       console.log(`   isbn10: "${sample.isbn10}"`);
       console.log(`   title: "${sample.title}"`);
       console.log(`   authors: "${sample.authors}"`);

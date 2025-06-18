@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 
 const bookSchema = new mongoose.Schema({
-  _id: { type: String }, // use isbn10 as document _id
+  _id: { 
+    type: String,     // Explicitly set as String type
+    required: true    // Make it required
+  },
   isbn10: { type: String, required: true, unique: true },
   title: { type: String, required: true },
   authors: { type: String }, // comma-separated if multiple
@@ -11,6 +14,9 @@ const bookSchema = new mongoose.Schema({
   published_year: { type: Number },
   average_rating: { type: Number },
   ratings_count: { type: Number },
+},
+{
+  _id: false  // CRITICAL: This tells Mongoose not to auto-generate _id fields
 });
 
 // Ensure _id is set from isbn10 before saving
