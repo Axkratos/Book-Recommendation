@@ -39,6 +39,7 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
     String token,
   ) async {
     final similarBook = await booksInfo.getSimilarBook(title, token);
+    print('Similar books fetched: ${similarBook[1]}');
     return similarBook;
   }
 
@@ -166,12 +167,16 @@ class Comment {
   final String username;
   final String text;
   final String timestamp;
+  final String id;
+  final bool reviewed;
 
   Comment({
+    required this.id,
     required this.avatarUrl,
     required this.username,
     required this.text,
     required this.timestamp,
+    required this.reviewed,
   });
 }
 
@@ -208,12 +213,16 @@ class _CommentsSectionState extends State<CommentsSection> {
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
+        print('response: ${response.body}');
         final data = jsonDecode(response.body);
         final reviews = data['data']['reviews'] as List;
         setState(() {
           _comments =
               reviews.map((review) {
+                print('reviewed?: ${review['reviewed']}');
                 return Comment(
+                  id: review['_id'] ?? '',
+                  reviewed: review['reviewed'] ?? false,
                   avatarUrl:
                       'https://i.pravatar.cc/150?u=${review['userName']}',
                   username: review['userName'] ?? 'Anonymous',
@@ -286,6 +295,39 @@ class _CommentsSectionState extends State<CommentsSection> {
     }
   }
 
+  Future<void> _deleteComment(String commentId) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token;
+    final url = Uri.parse('$baseUrl/api/v1/books/review/$commentId');
+    try {
+      final response = await http.delete(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      print('Delete response: ${response.statusCode} - ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await _fetchComments();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comment deleted.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete comment.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -330,7 +372,55 @@ class _CommentsSectionState extends State<CommentsSection> {
                 const NeverScrollableScrollPhysics(), // Disables this ListView's scrolling
             itemCount: _comments.length,
             itemBuilder: (context, index) {
-              return _CommentTile(comment: _comments[index]);
+              final comment = _comments[index];
+              return Stack(
+                children: [
+                  _CommentTile(comment: comment),
+                  if (comment.reviewed)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                        tooltip: 'Delete your comment',
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('Delete Comment'),
+                                  content: const Text(
+                                    'Are you sure you want to delete this comment?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, true),
+                                      child: const Text(
+                                        'Delete',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          if (confirm == true) {
+                            await _deleteComment(comment.id);
+                          }
+                        },
+                      ),
+                    ),
+                ],
+              );
             },
             separatorBuilder: (context, index) => const Divider(height: 32),
           ),

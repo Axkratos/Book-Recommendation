@@ -645,76 +645,85 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                           }
                         }
                         : null,
-                onEdit: () async {
-                  final controller = TextEditingController(
-                    text: comment.content,
-                  );
-                  final updated = await showDialog<String>(
-                    context: context,
-                    builder:
-                        (ctx) => AlertDialog(
-                          title: const Text('Edit Comment'),
-                          content: TextField(
-                            controller: controller,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText: 'Edit your comment...',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed:
-                                  () => Navigator.of(ctx).pop(controller.text),
-                              child: const Text('Update'),
-                            ),
-                          ],
-                        ),
-                  );
-                  if (updated != null &&
-                      updated.trim().isNotEmpty &&
-                      updated != comment.content) {
-                    final success = await updateComment(
-                      comment.id,
-                      updated,
-                      providerUser.token,
-                    );
-                    if (success) {
-                      setState(() {
-                        _comments[index] = Comment(
-                          id: comment.id,
-                          authorName: comment.authorName,
-                          avatarUrl: comment.avatarUrl,
-                          content: updated,
-                          timeAgo: 'just now',
-                          commented: comment.commented,
-                        );
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: vintagePrimaryText,
-                          content: Text(
-                            'Comment updated.',
-                            style: GoogleFonts.montserrat(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.red,
-                          content: Text(
-                            'Failed to update comment.',
-                            style: GoogleFonts.montserrat(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                },
+                onEdit:
+                    comment.commented
+                        ? () async {
+                          final controller = TextEditingController(
+                            text: comment.content,
+                          );
+                          final updated = await showDialog<String>(
+                            context: context,
+                            builder:
+                                (ctx) => AlertDialog(
+                                  title: const Text('Edit Comment'),
+                                  content: TextField(
+                                    controller: controller,
+                                    maxLines: 4,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Edit your comment...',
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(ctx).pop(),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.of(
+                                            ctx,
+                                          ).pop(controller.text),
+                                      child: const Text('Update'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          if (updated != null &&
+                              updated.trim().isNotEmpty &&
+                              updated != comment.content) {
+                            final success = await updateComment(
+                              comment.id,
+                              updated,
+                              providerUser.token,
+                            );
+                            if (success) {
+                              setState(() {
+                                _comments[index] = Comment(
+                                  id: comment.id,
+                                  authorName: comment.authorName,
+                                  avatarUrl: comment.avatarUrl,
+                                  content: updated,
+                                  timeAgo: 'just now',
+                                  commented: comment.commented,
+                                );
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: vintagePrimaryText,
+                                  content: Text(
+                                    'Comment updated.',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Failed to update comment.',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                        : null,
               );
             },
             separatorBuilder:

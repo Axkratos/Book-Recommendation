@@ -192,9 +192,7 @@ class BooksInfo {
       final data = json.decode(response.body);
       final List booksJson = data['data'];
       //print('Books fetched successfully: ${response.body}');
-      for (var book in booksJson) {
-        print('Book JSON: $book');
-      }
+
       return booksJson.map((json) => Book.fromJson(json)).toList();
     } else {
       print('Error fetching books: ${response.statusCode}');
@@ -212,8 +210,11 @@ class BooksInfo {
         'Authorization': ' Bearer $token',
       },
     );
+    print('Fetching books from: $url'); // For debugging
+    print('Response status code: ${response.statusCode}'); // For debugging
+    print('Response body: ${response.body}'); // For debugging
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 204) {
       final data = json.decode(response.body);
       final List booksJson = data['data'];
       //print('Books fetched successfully: ${response.body}');

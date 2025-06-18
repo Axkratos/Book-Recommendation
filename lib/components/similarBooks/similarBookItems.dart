@@ -10,8 +10,8 @@ class SimilarBookListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String title = book['title'] as String? ?? 'Unknown Title';
-    String author = book['author'] as String? ?? 'Unknown Author';
-    String? imageUrl = book['image'] as String?;
+    String author = book['authors'] as String? ?? 'Unknown Author';
+    String? imageUrl = book['thumbnail'] as String?;
 
     final TextStyle itemTitleStyle = GoogleFonts.ebGaramond(
       color: vintageDarkBrown,
