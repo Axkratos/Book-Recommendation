@@ -1044,22 +1044,20 @@ export const getReviewsByBook = async (req, res) => {
 
 export const deleteReview = async (req, res) => {
   const userId = req.user.id;
-  const  reviewID  = req.params.id;
-
+  const reviewID = req.params.id;
 
   try {
-    const reviewDoc = await Review.findByIdAndDelete({
+    const reviewDoc = await Review.findOneAndDelete({
       _id: reviewID,
-      user: userId, // Ensure the user owns the review
+      user: userId,
     });
+
     if (!reviewDoc) {
       return res.status(404).json({
         status: "fail",
         message: "Review not found or you do not have permission to delete it.",
       });
     }
-
-    
 
     res.status(200).json({
       status: "success",
