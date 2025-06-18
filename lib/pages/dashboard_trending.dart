@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:bookrec/components/drop_down_menu.dart';
 import 'package:bookrec/components/trendingBooks.dart';
 import 'package:bookrec/modals.dart/book_modal.dart';
@@ -28,6 +30,7 @@ class _DashboardTrendingState extends State<DashboardTrending> {
     final booksInfo = BooksInfo();
     final rawBooks = await booksInfo.getTrendingBooks();
     final parsedBooks = rawBooks.map((book) => Book.fromJson(book)).toList();
+    print('Parsed ${parsedBooks[1].isbn}');
     // Initially sort the books and update the state list
     _books = _sort(parsedBooks, _selectedSort);
     return _books;
@@ -317,28 +320,58 @@ class VintageBookCard extends StatelessWidget {
     );
   }
 
+  Future<String?> fetchBookCover(String isbn) async {
+    print('Fetching cover for ISBN: $isbn');
+    try {
+      final url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['totalItems'] > 0) {
+          final volumeInfo = data['items'][0]['volumeInfo'];
+          final imageLinks = volumeInfo['imageLinks'];
+
+          final googleThumbnail =
+              imageLinks?['thumbnail'] ?? imageLinks?['smallThumbnail'];
+
+          if (googleThumbnail != null) {
+            // Use CORS proxy to allow Flutter Web to load it
+            final proxyUrl =
+                'https://corsproxy.io/?${Uri.encodeComponent(googleThumbnail.replaceAll('http:', 'https:'))}';
+            print('Cover URL: $proxyUrl');
+            return proxyUrl;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching book cover: $e');
+    }
+
+    return null;
+  }
+
   // Helper widget for the book cover to avoid code duplication.
   Widget _buildBookCover({required double width, required double height}) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(4, 4),
-          ),
-        ],
-      ),
-      // The tilt effect
-      child: Transform.rotate(
-        angle: -0.08,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Image.network(
-            book.thumbnail,
+    return FutureBuilder<String?>(
+      future: fetchBookCover(
+        book.isbn!, // Use the ISBN from the book model,
+      ), // Make sure your Book model has an 'isbn' field
+      builder: (context, snapshot) {
+        Widget imageWidget;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          imageWidget = const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError ||
+            !snapshot.hasData ||
+            snapshot.data == null) {
+          imageWidget = Container(
+            color: const Color(0xFFD3C5B5),
+            child: const Icon(Icons.book, color: Colors.white, size: 40),
+          );
+        } else {
+          imageWidget = Image.network(
+            snapshot.data!,
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
@@ -350,9 +383,32 @@ class VintageBookCard extends StatelessWidget {
                 child: const Icon(Icons.book, color: Colors.white, size: 40),
               );
             },
+          );
+        }
+
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(4, 4),
+              ),
+            ],
           ),
-        ),
-      ),
+          // The tilt effect
+          child: Transform.rotate(
+            angle: -0.08,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: imageWidget,
+            ),
+          ),
+        );
+      },
     );
   }
 

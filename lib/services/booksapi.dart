@@ -30,7 +30,8 @@ class BooksInfo {
     Map data = jsonDecode(response.body);
     if (response.statusCode == 200) {
       print('Trending books fetched successfully');
-      //print(data['data']);
+      final d = data['data'];
+      print(d[1]);
       return data['data'];
     } else {
       print('Error fetching trending books: ${response.statusCode}');

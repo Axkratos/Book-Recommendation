@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class trendingBook extends StatelessWidget {
   trendingBook({
@@ -124,6 +126,36 @@ class BookCard extends StatelessWidget {
     this.isMobile = false,
   });
 
+  Future<String?> fetchBookCover(String isbn) async {
+    try {
+      final url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['totalItems'] > 0) {
+          final volumeInfo = data['items'][0]['volumeInfo'];
+          final imageLinks = volumeInfo['imageLinks'];
+
+          final googleThumbnail =
+              imageLinks?['thumbnail'] ?? imageLinks?['smallThumbnail'];
+
+          if (googleThumbnail != null) {
+            // Use CORS proxy to allow Flutter Web to load it
+            final proxyUrl =
+                'https://corsproxy.io/?${Uri.encodeComponent(googleThumbnail.replaceAll('http:', 'https:'))}';
+            return proxyUrl;
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching book cover: $e');
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     double imageFlex = isDesktop ? 12 : (isMobile ? 5 : 7);
@@ -139,8 +171,6 @@ class BookCard extends StatelessWidget {
     final Color shadowColor = Colors.brown.withOpacity(0.4);
 
     // A subtle paper texture URL. You can replace this with a local asset.
-    const String paperTextureUrl =
-        'https://www.transparenttextures.com/patterns/paper-fibers.png';
 
     return Container(
       width: width,
@@ -157,12 +187,8 @@ class BookCard extends StatelessWidget {
             offset: const Offset(4, 4),
           ),
         ],
+
         // --- Applying the Paper Texture ---
-        image: const DecorationImage(
-          image: NetworkImage(paperTextureUrl),
-          fit: BoxFit.cover,
-          opacity: 0.6, // Make it subtle
-        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -171,23 +197,30 @@ class BookCard extends StatelessWidget {
           // --- Book Cover Image ---
           Expanded(
             flex: imageFlex.toInt(),
-            child: Container(
-              // --- "Pasted-on" Photo Border ---
-              decoration: BoxDecoration(
-                border: Border.all(color: textColor.withOpacity(0.5), width: 3),
-                image: DecorationImage(
-                  image: NetworkImage(
-                    book['thumbnail'] ?? 'https://via.placeholder.com/150',
+            child: FutureBuilder<String?>(
+              future: fetchBookCover(book['isbn10']),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final coverUrl =
+                    snapshot.data ??
+                    'https://covers.openlibrary.org/b/isbn/${book['isbn10']}-L.jpg';
+
+                return Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: textColor.withOpacity(0.5),
+                      width: 3,
+                    ),
+                    image: DecorationImage(
+                      image: NetworkImage(coverUrl),
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child:
-                  (book['thumbnail'] == null)
-                      ? const Center(
-                        child: Icon(Icons.book, color: Colors.grey, size: 50),
-                      )
-                      : null,
+                );
+              },
             ),
           ),
 
