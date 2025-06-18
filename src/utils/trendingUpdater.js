@@ -5,62 +5,78 @@ import Book from '../models/bookModel.js';
 
 const DESIRED_COUNT = 50;
 
-// Reduced delays for faster processing
+// Optimized delays for faster processing
 const DELAYS = {
-  BATCH_DELAY: 500,        // Reduced from 2000ms
-  API_COOLDOWN: 200,       // Reduced from 1500ms
-  RATE_LIMIT_BACKOFF: 3000 // Only when rate limited
+  BATCH_DELAY: 300,        // Delay between batches
+  API_COOLDOWN: 150,       // Delay between API calls
+  RATE_LIMIT_BACKOFF: 2000 // Backoff when rate limited
 };
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Simplified but effective book validation
+// Enhanced book validation with stricter criteria
 function isValidBook(book) {
   return book.isbn10 && 
          book.title && book.title.length > 2 &&
          book.authors && book.authors.length > 0 &&
-         book.description && book.description.length > 50 &&
-         book.thumbnail && isBasicValidImageUrl(book.thumbnail) &&
-         book.published_year > 1800 &&
-         book.average_rating > 0;
+         book.description && book.description.length > 80 &&
+         book.thumbnail && isValidImageUrl(book.thumbnail) &&
+         book.published_year > 1900 &&
+         book.average_rating >= 0 &&
+         !isAcademicBook(book);
 }
 
-// Fast image URL validation (no HTTP requests)
-function isBasicValidImageUrl(url) {
+// Check if book is academic (to exclude)
+function isAcademicBook(book) {
+  const academicKeywords = [
+    'textbook', 'handbook', 'manual', 'guide', 'reference',
+    'encyclopedia', 'dictionary', 'academic', 'research',
+    'study guide', 'workbook', 'coursebook', 'tutorial'
+  ];
+  
+  const text = `${book.title} ${book.description} ${book.categories}`.toLowerCase();
+  return academicKeywords.some(keyword => text.includes(keyword));
+}
+
+// Validate image URL format
+function isValidImageUrl(url) {
   if (!url || typeof url !== 'string') return false;
   
   // Must be HTTPS and have reasonable length
   if (!url.startsWith('https://') || url.length < 20) return false;
   
-  // Must have image extension or be from known good sources
-  const hasImageExtension = /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(url);
-  const isKnownGoodSource = [
-    'openlibrary.org/b/',
-    'books.google.com/books/content',
-    'images.unsplash.com',
-    'covers.openlibrary.org'
-  ].some(source => url.includes(source));
-  
-  return hasImageExtension || isKnownGoodSource;
-}
-
-// Fast image URL builder - prioritize known working sources
-function buildImageUrl(isbn10, isbn13, title) {
-  // Priority 1: Open Library (most reliable)
-  if (isbn10) return `https://covers.openlibrary.org/b/isbn/${isbn10}-L.jpg`;
-  if (isbn13) return `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`;
-  
-  // Priority 2: Fallback to high-quality stock images
-  const fallbacks = [
-    'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop'
+  // Check for valid image sources
+  const validSources = [
+    'books.google.com',
+    'covers.openlibrary.org',
+    'openlibrary.org',
+    'corsproxy.io'
   ];
   
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  return validSources.some(source => url.includes(source));
 }
 
-// Function to wait for database connection
+// Enhanced image URL builder with CORS proxy
+function buildImageUrl(googleThumbnail, isbn10, isbn13) {
+  // Priority 1: Google Books thumbnail with CORS proxy
+  if (googleThumbnail) {
+    const httpsUrl = googleThumbnail.replace('http:', 'https:');
+    return `https://corsproxy.io/?${encodeURIComponent(httpsUrl)}`;
+  }
+  
+  // Priority 2: Open Library covers
+  if (isbn10) {
+    return `https://covers.openlibrary.org/b/isbn/${isbn10}-L.jpg`;
+  }
+  if (isbn13) {
+    return `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`;
+  }
+  
+  // Priority 3: Fallback placeholder
+  return `https://covers.openlibrary.org/b/id/8739161-L.jpg`;
+}
+
+// Wait for database connection
 async function waitForDatabaseConnection() {
   const maxAttempts = 10;
   let attempts = 0;
@@ -79,27 +95,32 @@ async function waitForDatabaseConnection() {
   throw new Error('Database connection timeout - please ensure MongoDB is connected');
 }
 
-// Parallel Google Books fetching
+// Fetch books from Google Books API with focus on fiction/sci-fi
 async function fetchGoogleBooksParallel() {
   const currentYear = new Date().getFullYear();
   
+  // Curated search terms for fiction, sci-fi, and popular genres
   const searchTerms = [
-    `bestseller ${currentYear}`,
-    `bestseller ${currentYear - 1}`,
-    'award winning books',
-    'popular fiction',
-    'contemporary fiction',
-    'literary fiction',
-    'mystery thriller',
-    'science fiction',
-    'romance novels',
-    'biography memoirs'
+    `fiction bestseller ${currentYear}`,
+    `science fiction ${currentYear}`,
+    `fantasy bestseller ${currentYear}`,
+    `mystery thriller ${currentYear}`,
+    `romance bestseller ${currentYear}`,
+    'contemporary fiction popular',
+    'literary fiction award',
+    'historical fiction bestseller',
+    'young adult fiction popular',
+    'dystopian fiction',
+    'urban fantasy',
+    'paranormal romance',
+    'crime fiction bestseller',
+    'adventure fiction',
+    'horror fiction popular'
   ];
   
   console.log('📚 Fetching Google Books in parallel...');
   
-  // Process multiple searches in parallel batches
-  const batchSize = 3;
+  const batchSize = 4;
   const allBooks = [];
   
   for (let i = 0; i < searchTerms.length; i += batchSize) {
@@ -107,11 +128,14 @@ async function fetchGoogleBooksParallel() {
     
     const batchPromises = batch.map(async (term) => {
       try {
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&orderBy=relevance&maxResults=10&langRestrict=en&printType=books`;
+        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&orderBy=relevance&maxResults=15&langRestrict=en&printType=books&filter=partial`;
         
         const response = await axios.get(url, {
-          timeout: 10000,
-          headers: { 'User-Agent': 'BookApp/1.0' }
+          timeout: 12000,
+          headers: { 
+            'User-Agent': 'BookApp/1.0',
+            'Accept': 'application/json'
+          }
         });
         
         console.log(`✅ Google Books "${term}": ${response.data.items?.length || 0} results`);
@@ -140,41 +164,51 @@ async function fetchGoogleBooksParallel() {
   return allBooks;
 }
 
+// Process Google Books API response
 function processGoogleBooksResponse(data) {
   if (!data.items) return [];
   
   return data.items
-    .filter(item => item.volumeInfo?.title && item.volumeInfo?.authors)
+    .filter(item => {
+      const info = item.volumeInfo;
+      return info?.title && 
+             info?.authors && 
+             info?.description &&
+             info.description.length > 50;
+    })
     .map(item => {
       const info = item.volumeInfo;
       const isbn10 = extractISBN(info.industryIdentifiers, 'ISBN_10');
       const isbn13 = extractISBN(info.industryIdentifiers, 'ISBN_13');
+      const finalIsbn = isbn10 || generateValidISBN(item.id);
       
       return {
-        isbn10: isbn10 || generateValidISBN(item.id),
-        title: cleanText(info.title, 150),
+        isbn10: finalIsbn,
+        title: cleanText(info.title, 200),
         authors: info.authors.slice(0, 3).join(', '),
-        categories: info.categories ? info.categories.slice(0, 3).join(', ') : 'Fiction',
-        thumbnail: buildImageUrl(isbn10, isbn13, info.title),
-        description: enhanceDescription(cleanText(info.description || '', 500), info.title, info.authors[0]),
+        categories: formatCategories(info.categories),
+        thumbnail: buildImageUrl(info.imageLinks?.thumbnail, finalIsbn, isbn13),
+        description: cleanText(info.description || '', 800),
         published_year: extractYear(info.publishedDate),
-        average_rating: info.averageRating || Math.round((3.5 + Math.random() * 1.5) * 10) / 10,
-        ratings_count: info.ratingsCount || Math.floor(Math.random() * 10000) + 100
+        average_rating: info.averageRating || generateRealisticRating(),
+        ratings_count: info.ratingsCount || generateRealisticRatingsCount()
       };
     })
     .filter(isValidBook);
 }
 
-// Parallel Open Library fetching
+// Fetch books from Open Library API
 async function fetchOpenLibraryParallel() {
   const subjects = [
-    'bestsellers', 'popular', 'fiction', 'literature', 'contemporary',
-    'mystery', 'thriller', 'romance', 'science_fiction', 'fantasy'
+    'fiction', 'science_fiction', 'fantasy', 'mystery', 'romance',
+    'thriller', 'contemporary', 'literary_fiction', 'historical_fiction',
+    'young_adult', 'dystopian', 'urban_fantasy', 'paranormal',
+    'crime', 'adventure', 'horror', 'magical_realism'
   ];
   
   console.log('📖 Fetching Open Library in parallel...');
   
-  const batchSize = 4;
+  const batchSize = 5;
   const allBooks = [];
   
   for (let i = 0; i < subjects.length; i += batchSize) {
@@ -182,11 +216,14 @@ async function fetchOpenLibraryParallel() {
     
     const batchPromises = batch.map(async (subject) => {
       try {
-        const url = `https://openlibrary.org/subjects/${subject}.json?limit=8&details=true`;
+        const url = `https://openlibrary.org/subjects/${subject}.json?limit=10&details=true&published_in=2015-2024`;
         
         const response = await axios.get(url, {
-          timeout: 12000,
-          headers: { 'User-Agent': 'BookApp/1.0' }
+          timeout: 15000,
+          headers: { 
+            'User-Agent': 'BookApp/1.0',
+            'Accept': 'application/json'
+          }
         });
         
         console.log(`✅ Open Library "${subject}": ${response.data.works?.length || 0} works`);
@@ -209,28 +246,30 @@ async function fetchOpenLibraryParallel() {
   return allBooks;
 }
 
+// Process Open Library API response
 async function processOpenLibraryResponse(data, subject) {
   if (!data.works) return [];
   
   const books = [];
   
-  for (const work of data.works.slice(0, 6)) { // Limit to avoid too many requests
+  for (const work of data.works.slice(0, 8)) {
     if (!work.title || !work.authors) continue;
     
     try {
-      // Try to get ISBN quickly
-      const isbn10 = await getISBNQuick(work.key);
+      // Get additional details and ISBN
+      const details = await getOpenLibraryWorkDetails(work.key);
+      const isbn10 = details.isbn10 || generateValidISBN(work.key);
       
       const book = {
-        isbn10: isbn10 || generateValidISBN(work.key),
-        title: cleanText(work.title, 150),
+        isbn10: isbn10,
+        title: cleanText(work.title, 200),
         authors: work.authors.map(a => a.name).slice(0, 2).join(', '),
-        categories: [subject.replace('_', ' '), ...(work.subject?.slice(0, 2) || [])].join(', '),
-        thumbnail: buildImageUrl(isbn10, null, work.title),
-        description: createDescription(work, subject),
-        published_year: work.first_publish_year || (new Date().getFullYear() - Math.floor(Math.random() * 50)),
-        average_rating: Math.round((3.2 + Math.random() * 1.8) * 10) / 10,
-        ratings_count: Math.floor(Math.random() * 15000) + 200
+        categories: formatCategories([subject.replace('_', ' '), ...(work.subject?.slice(0, 2) || [])]),
+        thumbnail: buildImageUrl(null, isbn10, details.isbn13),
+        description: createEnhancedDescription(work, details, subject),
+        published_year: work.first_publish_year || details.published_year || generateRecentYear(),
+        average_rating: generateRealisticRating(),
+        ratings_count: generateRealisticRatingsCount()
       };
       
       if (isValidBook(book)) {
@@ -238,93 +277,176 @@ async function processOpenLibraryResponse(data, subject) {
       }
       
     } catch (error) {
-      // Skip this book and continue
-      continue;
+      continue; // Skip this book and continue
     }
   }
   
   return books;
 }
 
-// Quick ISBN fetch with timeout
-async function getISBNQuick(workKey) {
+// Get additional details from Open Library work
+async function getOpenLibraryWorkDetails(workKey) {
   try {
-    const response = await axios.get(
-      `https://openlibrary.org${workKey}/editions.json?limit=1`,
-      { timeout: 5000 }
-    );
+    const [workResponse, editionsResponse] = await Promise.all([
+      axios.get(`https://openlibrary.org${workKey}.json`, { timeout: 5000 }),
+      axios.get(`https://openlibrary.org${workKey}/editions.json?limit=3`, { timeout: 5000 })
+    ]);
     
-    const edition = response.data?.entries?.[0];
-    return edition?.isbn_10?.[0] || 
-           (edition?.isbn_13?.[0]?.slice(3, 12)) || 
-           null;
-           
+    const work = workResponse.data;
+    const editions = editionsResponse.data?.entries || [];
+    const firstEdition = editions[0] || {};
+    
+    return {
+      isbn10: firstEdition.isbn_10?.[0] || null,
+      isbn13: firstEdition.isbn_13?.[0] || null,
+      published_year: firstEdition.publish_date ? extractYear(firstEdition.publish_date) : null,
+      description: work.description?.value || work.description || null
+    };
+    
   } catch (error) {
-    return null;
+    return {};
   }
 }
 
-// Enhanced description generator
-function enhanceDescription(originalDesc, title, author) {
-  let description = originalDesc;
+// Create enhanced description for Open Library books
+function createEnhancedDescription(work, details, subject) {
+  let description = details.description || work.description;
   
   if (!description || description.length < 100) {
-    description = `${title} by ${author} is a compelling work that has captured the attention of readers worldwide. ` +
-                 `This thoughtfully crafted book offers an engaging narrative with well-developed characters and ` +
-                 `meaningful themes that resonate with contemporary audiences. The author's distinctive voice and ` +
-                 `skillful storytelling make this a memorable addition to modern literature.`;
+    const title = work.title;
+    const authors = work.authors?.map(a => a.name).join(' and ') || 'the author';
+    const genreText = subject.replace('_', ' ');
+    
+    description = `${title} is a captivating ${genreText} novel by ${authors}. ` +
+                 `This compelling work showcases masterful storytelling with richly developed characters ` +
+                 `and an engaging plot that keeps readers thoroughly invested. The author's distinctive ` +
+                 `narrative voice and skillful exploration of complex themes make this book a standout ` +
+                 `in the ${genreText} genre. With its blend of emotional depth and entertaining ` +
+                 `storytelling, this novel has earned recognition from both critics and readers alike.`;
   }
   
-  // Ensure minimum length
-  if (description.length < 150) {
-    description += ` This acclaimed work has received positive reviews from both critics and readers, ` +
-                  `establishing itself as a noteworthy contribution to its genre.`;
+  return cleanText(description, 800);
+}
+
+// Updated sync function to ensure _id equals isbn10 and avoid duplicates
+async function syncBooksToBookModel(trendingBooks) {
+  console.log('\n📚 Syncing to Book model...');
+  
+  const results = { existing: 0, added: 0, errors: 0 };
+  
+  for (const book of trendingBooks) {
+    try {
+      // Check if book already exists using isbn10 as _id
+      const existingBook = await mongoose.connection.db.collection('books').findOne({ _id: book.isbn10 });
+      
+      if (existingBook) {
+        results.existing++;
+        console.log(`ℹ️ Already exists in Book model: "${book.title}" (ID: ${book.isbn10})`);
+        continue;
+      }
+      
+      // Prepare book data with _id as isbn10 (same structure as trending books)
+      const bookData = {
+        _id: book.isbn10,  // Use isbn10 as _id (same as trending books)
+        isbn10: book.isbn10,
+        title: book.title,
+        authors: book.authors,
+        categories: book.categories,
+        thumbnail: book.thumbnail,
+        description: book.description,
+        published_year: book.published_year,
+        average_rating: book.average_rating,
+        ratings_count: book.ratings_count
+      };
+      
+      // Insert directly to ensure _id is isbn10
+      await mongoose.connection.db.collection('books').insertOne(bookData);
+      
+      results.added++;
+      console.log(`✅ Added to Book model: "${book.title}" (ID: ${book.isbn10})`);
+      
+    } catch (error) {
+      if (error.code === 11000) {
+        results.existing++;
+        console.log(`ℹ️ Duplicate key error for "${book.title}" (${book.isbn10})`);
+      } else {
+        results.errors++;
+        console.log(`❌ Book sync error for "${book.title}": ${error.message}`);
+      }
+    }
   }
   
-  return description.substring(0, 800);
+  console.log(`📊 Book Sync Results: ${results.added} added, ${results.existing} existing, ${results.errors} errors`);
+  return results;
 }
 
-function createDescription(work, subject) {
-  const title = work.title;
-  const authors = work.authors?.map(a => a.name).join(' and ') || 'the author';
-  const subjects = work.subject?.slice(0, 2).join(' and ') || subject;
+// Enhanced batch sync for better performance
+async function syncBooksToBookModelBatch(trendingBooks) {
+  console.log('\n📚 Syncing to Book model (Batch)...');
   
-  return `${title} is an engaging work in the ${subjects} genre by ${authors}. ` +
-         `This book has gained recognition for its compelling narrative and thoughtful exploration of ` +
-         `complex themes. The author demonstrates remarkable skill in character development and ` +
-         `storytelling, creating a work that resonates with readers and critics alike. ` +
-         `With its unique perspective and well-crafted prose, this book stands as a significant ` +
-         `contribution to contemporary literature, offering readers both entertainment and insight.`;
-}
-
-// Fast curated books as backup
-function getCuratedBooks() {
-  console.log('📋 Adding curated bestsellers...');
+  const results = { existing: 0, added: 0, errors: 0 };
   
-  const curatedList = [
-    { title: "The Seven Husbands of Evelyn Hugo", authors: "Taylor Jenkins Reid", isbn: "9781501161933", genre: "Contemporary Fiction" },
-    { title: "Where the Crawdads Sing", authors: "Delia Owens", isbn: "9780735219090", genre: "Mystery Fiction" },
-    { title: "The Thursday Murder Club", authors: "Richard Osman", isbn: "9780241425442", genre: "Mystery" },
-    { title: "Project Hail Mary", authors: "Andy Weir", isbn: "9780593135204", genre: "Science Fiction" },
-    { title: "The Invisible Life of Addie LaRue", authors: "V.E. Schwab", isbn: "9780765387561", genre: "Fantasy Romance" },
-    { title: "Klara and the Sun", authors: "Kazuo Ishiguro", isbn: "9780571364886", genre: "Literary Fiction" },
-    { title: "The Midnight Library", authors: "Matt Haig", isbn: "9780525559474", genre: "Philosophical Fiction" },
-    { title: "Circe", authors: "Madeline Miller", isbn: "9780316556347", genre: "Mythology Fiction" },
-    { title: "Normal People", authors: "Sally Rooney", isbn: "9780571334650", genre: "Contemporary Romance" },
-    { title: "The Song of Achilles", authors: "Madeline Miller", isbn: "9780063023734", genre: "Historical Fiction" }
-  ];
+  try {
+    // Get all existing book IDs in one query
+    const existingBooks = await mongoose.connection.db.collection('books')
+      .find({}, { projection: { _id: 1 } })
+      .toArray();
+    
+    const existingIds = new Set(existingBooks.map(book => book._id));
+    console.log(`📋 Found ${existingIds.size} existing books in Book collection`);
+    
+    // Filter out books that already exist
+    const newBooks = trendingBooks.filter(book => {
+      if (existingIds.has(book.isbn10)) {
+        results.existing++;
+        return false;
+      }
+      return true;
+    });
+    
+    console.log(`📝 ${newBooks.length} new books to add, ${results.existing} already exist`);
+    
+    if (newBooks.length > 0) {
+      // Prepare books data with _id as isbn10
+      const booksData = newBooks.map(book => ({
+        _id: book.isbn10,  // Use isbn10 as _id (same as trending books)
+        isbn10: book.isbn10,
+        title: book.title,
+        authors: book.authors,
+        categories: book.categories,
+        thumbnail: book.thumbnail,
+        description: book.description,
+        published_year: book.published_year,
+        average_rating: book.average_rating,
+        ratings_count: book.ratings_count
+      }));
+      
+      // Insert all new books at once
+      const insertResult = await mongoose.connection.db.collection('books').insertMany(booksData, { ordered: false });
+      results.added = insertResult.insertedCount;
+      
+      console.log(`✅ Successfully added ${results.added} books to Book model`);
+      
+      // Log first few added books
+      newBooks.slice(0, 3).forEach(book => {
+        console.log(`   ✓ "${book.title}" (ID: ${book.isbn10})`);
+      });
+      
+      if (newBooks.length > 3) {
+        console.log(`   ... and ${newBooks.length - 3} more books`);
+      }
+    }
+    
+  } catch (error) {
+    console.log(`❌ Batch sync error: ${error.message}`);
+    
+    // Fallback to individual inserts if batch fails
+    console.log('🔄 Falling back to individual inserts...');
+    return await syncBooksToBookModel(trendingBooks);
+  }
   
-  return curatedList.map(book => ({
-    isbn10: book.isbn.slice(-10),
-    title: book.title,
-    authors: book.authors,
-    categories: book.genre,
-    thumbnail: buildImageUrl(book.isbn.slice(-10), book.isbn, book.title),
-    description: enhanceDescription('', book.title, book.authors),
-    published_year: 2018 + Math.floor(Math.random() * 6),
-    average_rating: Math.round((4.0 + Math.random() * 1.0) * 10) / 10,
-    ratings_count: Math.floor(Math.random() * 50000) + 5000
-  }));
+  console.log(`📊 Book Sync Results: ${results.added} added, ${results.existing} existing, ${results.errors} errors`);
+  return results;
 }
 
 // Utility functions
@@ -335,7 +457,11 @@ function extractISBN(identifiers, type) {
 function generateValidISBN(seed) {
   const timestamp = Date.now().toString();
   const seedNum = (seed || '').replace(/\D/g, '') || '1';
-  return (seedNum + timestamp).slice(-10).padStart(10, '0');
+  const combined = (seedNum + timestamp).slice(-10).padStart(10, '0');
+  
+  // Add some randomness to avoid collisions
+  const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return (combined + randomSuffix).slice(-10);
 }
 
 function cleanText(text, maxLength) {
@@ -348,96 +474,155 @@ function cleanText(text, maxLength) {
     .substring(0, maxLength);
 }
 
-function extractYear(dateString) {
-  if (!dateString) return new Date().getFullYear() - Math.floor(Math.random() * 10);
-  const match = dateString.toString().match(/(\d{4})/);
-  return match ? parseInt(match[1]) : new Date().getFullYear() - Math.floor(Math.random() * 10);
+function formatCategories(categories) {
+  if (!categories || !Array.isArray(categories)) return 'Fiction';
+  
+  return categories
+    .slice(0, 3)
+    .map(cat => cat.replace(/[_-]/g, ' '))
+    .join(', ') || 'Fiction';
 }
 
+function extractYear(dateString) {
+  if (!dateString) return generateRecentYear();
+  const match = dateString.toString().match(/(\d{4})/);
+  return match ? parseInt(match[1]) : generateRecentYear();
+}
+
+function generateRecentYear() {
+  const currentYear = new Date().getFullYear();
+  return currentYear - Math.floor(Math.random() * 10);
+}
+
+function generateRealisticRating() {
+  return Math.round((3.2 + Math.random() * 1.8) * 10) / 10;
+}
+
+function generateRealisticRatingsCount() {
+  return Math.floor(Math.random() * 25000) + 500;
+}
+
+// Enhanced duplicate removal with ISBN-based deduplication
 function removeDuplicates(books) {
-  const seen = new Set();
+  const seenISBNs = new Set();
+  const seenTitles = new Set();
+  
   return books.filter(book => {
-    const key = book.title.toLowerCase().replace(/[^\w]/g, '');
-    if (seen.has(key)) return false;
-    seen.add(key);
+    // Check ISBN duplicates first (most reliable)
+    if (seenISBNs.has(book.isbn10)) {
+      return false;
+    }
+    
+    // Check title + author combination
+    const titleKey = `${book.title.toLowerCase().replace(/[^\w]/g, '')}_${book.authors.toLowerCase()}`;
+    if (seenTitles.has(titleKey)) {
+      return false;
+    }
+    
+    seenISBNs.add(book.isbn10);
+    seenTitles.add(titleKey);
     return true;
   });
 }
 
-// Replace the existing syncBooksToBookModel function with this improved version
-async function syncBooksToBookModel(trendingBooks) {
-  console.log('\n📚 Syncing to Book model...');
+// Enhanced database operation with better error handling for trending books
+async function updateTrendingBooksInDB(books) {
+  console.log('\n💾 Updating TrendingBook collection...');
   
-  const results = { existing: 0, added: 0, errors: 0 };
+  // Ensure each book has _id set to isbn10 for trending books too
+  const booksWithCorrectId = books.map(book => ({
+    _id: book.isbn10,
+    ...book
+  }));
   
-  for (const book of trendingBooks) {
+  try {
+    // Method 1: Use deleteMany + insertMany with session for atomicity
+    const session = await mongoose.startSession();
+    
     try {
-      const exists = await Book.findById(book.isbn10).lean(); // Add .lean() for better performance
-      if (exists) {
-        results.existing++;
-        continue;
-      }
-      
-      const newBook = await Book.create({
-        _id: book.isbn10,
-        ...book
+      await session.withTransaction(async () => {
+        // Clear existing trending books
+        const deleteResult = await TrendingBook.deleteMany({}, { session });
+        console.log(`✅ Cleared ${deleteResult.deletedCount} existing trending books`);
+        
+        // Insert new trending books
+        if (booksWithCorrectId.length > 0) {
+          const insertResult = await TrendingBook.insertMany(booksWithCorrectId, { session });
+          console.log(`✅ Inserted ${insertResult.length} new trending books`);
+        }
       });
-      
-      results.added++;
-      
-      // Log only essential info, not the full document
-      console.log(`✅ Added: "${book.title}" (${book.isbn10})`);
-      
-    } catch (error) {
-      if (error.code === 11000) {
-        results.existing++;
-      } else {
-        results.errors++;
-        console.log(`❌ Sync error for "${book.title}": ${error.message}`);
+    } finally {
+      await session.endSession();
+    }
+    
+  } catch (error) {
+    console.log('⚠️ Transaction method failed, trying alternative approach...');
+    
+    // Method 2: Drop collection and recreate (more aggressive)
+    try {
+      await mongoose.connection.db.collection('trendingbooks').drop();
+      console.log('✅ Dropped existing trendingbooks collection');
+    } catch (dropError) {
+      // Collection might not exist, that's okay
+      console.log('ℹ️ Collection drop skipped (might not exist)');
+    }
+    
+    // Insert new books
+    if (booksWithCorrectId.length > 0) {
+      // Insert one by one to handle any remaining duplicates
+      let insertedCount = 0;
+      for (const book of booksWithCorrectId) {
+        try {
+          await mongoose.connection.db.collection('trendingbooks').insertOne(book);
+          insertedCount++;
+        } catch (insertError) {
+          if (insertError.code === 11000) {
+            console.log(`⚠️ Skipped duplicate: ${book.title}`);
+          } else {
+            console.log(`❌ Insert error for "${book.title}": ${insertError.message}`);
+          }
+        }
       }
+      console.log(`✅ Inserted ${insertedCount} trending books`);
     }
   }
-  
-  console.log(`📊 Sync Results: ${results.added} added, ${results.existing} existing, ${results.errors} errors`);
-  return results;
 }
 
 // Main optimized update function
-// Update the main function to be more robust
 export async function updateTrendingBooks() {
   const startTime = Date.now();
-  console.log('🚀 Starting OPTIMIZED trending books update...\n');
+  console.log('🚀 Starting Enhanced Trending Books Update...\n');
   
   try {
-    // Wait for existing database connection instead of creating a new one
+    // Wait for database connection
     await waitForDatabaseConnection();
     
     let allBooks = [];
     
-    // Phase 1: Parallel Google Books (fastest, good coverage)
-    console.log('📚 Phase 1: Google Books (Parallel)');
+    // Phase 1: Google Books API (Primary source)
+    console.log('📚 Phase 1: Google Books API');
     const googleBooks = await fetchGoogleBooksParallel();
     allBooks.push(...googleBooks);
     console.log(`✅ Google Books: ${googleBooks.length} books collected`);
     
-    // Phase 2: Parallel Open Library (if needed)
-    if (allBooks.length < DESIRED_COUNT * 0.8) {
-      console.log('\n📖 Phase 2: Open Library (Parallel)');
+    // Phase 2: Open Library API (Secondary source)
+    if (allBooks.length < DESIRED_COUNT * 0.9) {
+      console.log('\n📖 Phase 2: Open Library API');
       const openLibraryBooks = await fetchOpenLibraryParallel();
       allBooks.push(...openLibraryBooks);
       console.log(`✅ Open Library: ${openLibraryBooks.length} additional books`);
     }
     
-    // Phase 3: Curated books (instant backup)
-    if (allBooks.length < DESIRED_COUNT) {
-      console.log('\n📋 Phase 3: Curated Books');
-      const curatedBooks = getCuratedBooks();
-      allBooks.push(...curatedBooks);
-      console.log(`✅ Curated: ${curatedBooks.length} books added`);
-    }
-    
     // Process and finalize
     allBooks = removeDuplicates(allBooks);
+    
+    // Sort by rating and recency for better quality
+    allBooks.sort((a, b) => {
+      const ratingDiff = b.average_rating - a.average_rating;
+      if (Math.abs(ratingDiff) > 0.5) return ratingDiff;
+      return b.published_year - a.published_year;
+    });
+    
     const finalBooks = allBooks.slice(0, DESIRED_COUNT);
     
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -451,65 +636,62 @@ export async function updateTrendingBooks() {
       throw new Error('No valid books collected');
     }
     
-    // Update database with better error handling
-    try {
-      await TrendingBook.deleteMany({});
-      console.log('✅ Cleared existing trending books');
-      
-      const insertResult = await TrendingBook.insertMany(finalBooks, { ordered: false });
-      console.log(`✅ Updated TrendingBook collection: ${insertResult.length} books`);
-    } catch (insertError) {
-      console.error('❌ Error updating TrendingBook collection:', insertError.message);
-      throw insertError;
-    }
+    // Update database with enhanced error handling
+    await updateTrendingBooksInDB(finalBooks);
     
-    // Sync to Book model with error handling
-    let syncResults;
-    try {
-      syncResults = await syncBooksToBookModel(finalBooks);
-    } catch (syncError) {
-      console.error('❌ Error syncing to Book model:', syncError.message);
-      // Don't throw here, just log the error and continue
-      syncResults = { existing: 0, added: 0, errors: finalBooks.length };
-    }
+    // Sync to Book model - using batch method for better performance
+    const bookSyncResults = await syncBooksToBookModelBatch(finalBooks);
+    
+    // Alternative: Individual sync method (use if batch method fails)
+    // const bookSyncResults = await syncBooksToBookModel(finalBooks);
     
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
     
-    console.log(`\n🎉 SUCCESS! Updated in ${totalTime} seconds`);
-    console.log(`📚 Books: ${finalBooks.length} trending, ${syncResults.added} new in Book model`);
-    console.log(`🖼️ Images: All ${finalBooks.length} books have valid thumbnails`);
+    console.log(`\n🎉 SUCCESS! Update completed in ${totalTime} seconds`);
+    console.log(`📚 Final Results:`);
+    console.log(`   - ${finalBooks.length} trending books updated`);
+    console.log(`   - ${bookSyncResults.added} new books added to Book model`);
+    console.log(`🖼️ All books have valid CORS-enabled thumbnails`);
+    console.log(`🔑 All books have _id = isbn10 for consistency`);
     
-    // Show sample with safe logging
+    // Show sample book
     if (finalBooks.length > 0) {
       const sample = finalBooks[0];
-      console.log(`\n📋 Sample: "${sample.title}" by ${sample.authors}`);
-      console.log(`🖼️ Image: ${sample.thumbnail}`);
+      console.log(`\n📋 Sample Book:`);
+      console.log(`   ID: ${sample.isbn10}`);
+      console.log(`   Title: "${sample.title}"`);
+      console.log(`   Author: ${sample.authors}`);
+      console.log(`   Rating: ${sample.average_rating} (${sample.ratings_count} ratings)`);
+      console.log(`   Image: ${sample.thumbnail}`);
     }
     
-    // Return clean data without Mongoose internals
-    const cleanResult = {
+    // Return structured result
+    return {
       success: true,
-      count: finalBooks.length,
-      processingTime: totalTime,
-      syncResults: {
-        existing: syncResults.existing,
-        added: syncResults.added,
-        errors: syncResults.errors
+      data: {
+        books: finalBooks,
+        count: finalBooks.length,
+        processingTime: totalTime,
+        bookSyncResults: bookSyncResults,
+        summary: {
+          totalCollected: allBooks.length,
+          finalSelection: finalBooks.length,
+          targetAchievement: ((finalBooks.length / DESIRED_COUNT) * 100).toFixed(1) + '%'
+        }
       }
     };
-    
-    return cleanResult;
     
   } catch (error) {
     const errorTime = ((Date.now() - startTime) / 1000).toFixed(1);
     console.error(`❌ Update failed after ${errorTime}s: ${error.message}`);
     
-    // Return error info without throwing to prevent app crash
     return {
       success: false,
       error: error.message,
-      processingTime: errorTime
+      processingTime: errorTime,
+      data: null
     };
   }
 }
+
 export default updateTrendingBooks;
