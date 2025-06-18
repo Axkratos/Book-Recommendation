@@ -3,9 +3,11 @@ from typing import Dict, List
 import logging
 import dotenv
 from fastapi import  HTTPException
+from dotenv import load_dotenv
+import os
 # Load environment variables from .env file
-dotenv.load_dotenv()
-MONGO_URI= dotenv.get_key(".env", "MONGO_URI")
+load_dotenv()
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 
 DB_NAME = "bookrec"
 RATINGS_COLLECTION = "ratings"
