@@ -180,14 +180,15 @@ function processGoogleBooksResponse(data) {
       const info = item.volumeInfo;
       const isbn10 = extractISBN(info.industryIdentifiers, 'ISBN_10');
       const isbn13 = extractISBN(info.industryIdentifiers, 'ISBN_13');
-      const finalIsbn = isbn10 || generateValidISBN(item.id);
+      const finalIsbn10 = isbn10 || generateValidISBN(item.id);
       
       return {
-        isbn10: finalIsbn,
+        _id: finalIsbn10,
+        isbn10: finalIsbn10,
         title: cleanText(info.title, 200),
         authors: info.authors.slice(0, 3).join(', '),
         categories: formatCategories(info.categories),
-        thumbnail: buildImageUrl(info.imageLinks?.thumbnail, finalIsbn, isbn13),
+        thumbnail: buildImageUrl(info.imageLinks?.thumbnail, finalIsbn10, isbn13),
         description: cleanText(info.description || '', 800),
         published_year: extractYear(info.publishedDate),
         average_rating: info.averageRating || generateRealisticRating(),
@@ -261,6 +262,7 @@ async function processOpenLibraryResponse(data, subject) {
       const isbn10 = details.isbn10 || generateValidISBN(work.key);
       
       const book = {
+        _id: isbn10,
         isbn10: isbn10,
         title: cleanText(work.title, 200),
         authors: work.authors.map(a => a.name).slice(0, 2).join(', '),
@@ -328,27 +330,61 @@ function createEnhancedDescription(work, details, subject) {
   return cleanText(description, 800);
 }
 
-// Updated sync function to ensure _id equals isbn10 and avoid duplicates
-async function syncBooksToBookModel(trendingBooks) {
-  console.log('\n📚 Syncing to Book model...');
+// Check for existing books to avoid duplicates in both models
+async function checkBookExists(isbn10, title) {
+  try {
+    const cleanTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    const [trendingExists, bookExists] = await Promise.all([
+      TrendingBook.findOne({
+        $or: [
+          { _id: isbn10 },
+          { isbn10: isbn10 },
+          { title: { $regex: new RegExp(cleanTitle, 'i') } }
+        ]
+      }).lean(),
+      Book.findOne({
+        $or: [
+          { _id: isbn10 },
+          { isbn10: isbn10 },
+          { title: { $regex: new RegExp(cleanTitle, 'i') } }
+        ]
+      }).lean()
+    ]);
+    
+    return trendingExists || bookExists;
+  } catch (error) {
+    console.log(`⚠️ Error checking if book exists: ${error.message}`);
+    return false;
+  }
+}
+
+// Save books to both models with consistent _id and uniqueness
+async function saveBooksToModels(books) {
+  console.log('\n💾 Saving books to database models...');
   
-  const results = { existing: 0, added: 0, errors: 0 };
+  const results = { 
+    trending: { added: 0, existing: 0, errors: 0 }, 
+    book: { added: 0, existing: 0, errors: 0 } 
+  };
   
-  for (const book of trendingBooks) {
+  for (const book of books) {
     try {
-      // Check if book already exists using isbn10 as _id
-      const existingBook = await mongoose.connection.db.collection('books').findOne({ _id: book.isbn10 });
+      const bookId = book.isbn10;
       
-      if (existingBook) {
-        results.existing++;
-        console.log(`ℹ️ Already exists in Book model: "${book.title}" (ID: ${book.isbn10})`);
+      // Check if book already exists in either model
+      const exists = await checkBookExists(bookId, book.title);
+      if (exists) {
+        results.trending.existing++;
+        results.book.existing++;
+        console.log(`⚠️ Book already exists: "${book.title}" (ID: ${bookId})`);
         continue;
       }
       
-      // Prepare book data with _id as isbn10 (same structure as trending books)
+      // Prepare consistent book data for both models
       const bookData = {
-        _id: book.isbn10,  // Use isbn10 as _id (same as trending books)
-        isbn10: book.isbn10,
+        _id: bookId,
+        isbn10: bookId,
         title: book.title,
         authors: book.authors,
         categories: book.categories,
@@ -359,93 +395,59 @@ async function syncBooksToBookModel(trendingBooks) {
         ratings_count: book.ratings_count
       };
       
-      // Insert directly to ensure _id is isbn10
-      await mongoose.connection.db.collection('books').insertOne(bookData);
+      // Save to TrendingBook model
+      try {
+        const existingTrending = await TrendingBook.findById(bookId).lean();
+        if (existingTrending) {
+          results.trending.existing++;
+          console.log(`📚 Trending book already exists: "${book.title}"`);
+        } else {
+          await TrendingBook.create(bookData);
+          results.trending.added++;
+          console.log(`✅ Trending saved: "${book.title}" (ID: ${bookId})`);
+        }
+      } catch (trendingError) {
+        if (trendingError.code === 11000) {
+          results.trending.existing++;
+          console.log(`📚 Trending duplicate: "${book.title}"`);
+        } else {
+          results.trending.errors++;
+          console.log(`❌ Trending error: ${trendingError.message}`);
+        }
+      }
       
-      results.added++;
-      console.log(`✅ Added to Book model: "${book.title}" (ID: ${book.isbn10})`);
+      // Save to Book model
+      try {
+        const existingBook = await Book.findById(bookId).lean();
+        if (existingBook) {
+          results.book.existing++;
+          console.log(`📖 Book already exists: "${book.title}"`);
+        } else {
+          await Book.create(bookData);
+          results.book.added++;
+          console.log(`✅ Book saved: "${book.title}" (ID: ${bookId})`);
+        }
+      } catch (bookError) {
+        if (bookError.code === 11000) {
+          results.book.existing++;
+          console.log(`📖 Book duplicate: "${book.title}"`);
+        } else {
+          results.book.errors++;
+          console.log(`❌ Book error: ${bookError.message}`);
+        }
+      }
       
     } catch (error) {
-      if (error.code === 11000) {
-        results.existing++;
-        console.log(`ℹ️ Duplicate key error for "${book.title}" (${book.isbn10})`);
-      } else {
-        results.errors++;
-        console.log(`❌ Book sync error for "${book.title}": ${error.message}`);
-      }
+      results.trending.errors++;
+      results.book.errors++;
+      console.log(`❌ General error for "${book.title}": ${error.message}`);
     }
   }
   
-  console.log(`📊 Book Sync Results: ${results.added} added, ${results.existing} existing, ${results.errors} errors`);
-  return results;
-}
-
-// Enhanced batch sync for better performance
-async function syncBooksToBookModelBatch(trendingBooks) {
-  console.log('\n📚 Syncing to Book model (Batch)...');
+  console.log(`📊 Save Results:`);
+  console.log(`   Trending: ${results.trending.added} added, ${results.trending.existing} existing, ${results.trending.errors} errors`);
+  console.log(`   Book: ${results.book.added} added, ${results.book.existing} existing, ${results.book.errors} errors`);
   
-  const results = { existing: 0, added: 0, errors: 0 };
-  
-  try {
-    // Get all existing book IDs in one query
-    const existingBooks = await mongoose.connection.db.collection('books')
-      .find({}, { projection: { _id: 1 } })
-      .toArray();
-    
-    const existingIds = new Set(existingBooks.map(book => book._id));
-    console.log(`📋 Found ${existingIds.size} existing books in Book collection`);
-    
-    // Filter out books that already exist
-    const newBooks = trendingBooks.filter(book => {
-      if (existingIds.has(book.isbn10)) {
-        results.existing++;
-        return false;
-      }
-      return true;
-    });
-    
-    console.log(`📝 ${newBooks.length} new books to add, ${results.existing} already exist`);
-    
-    if (newBooks.length > 0) {
-      // Prepare books data with _id as isbn10
-      const booksData = newBooks.map(book => ({
-        _id: book.isbn10,  // Use isbn10 as _id (same as trending books)
-        isbn10: book.isbn10,
-        title: book.title,
-        authors: book.authors,
-        categories: book.categories,
-        thumbnail: book.thumbnail,
-        description: book.description,
-        published_year: book.published_year,
-        average_rating: book.average_rating,
-        ratings_count: book.ratings_count
-      }));
-      
-      // Insert all new books at once
-      const insertResult = await mongoose.connection.db.collection('books').insertMany(booksData, { ordered: false });
-      results.added = insertResult.insertedCount;
-      
-      console.log(`✅ Successfully added ${results.added} books to Book model`);
-      
-      // Log first few added books
-      newBooks.slice(0, 3).forEach(book => {
-        console.log(`   ✓ "${book.title}" (ID: ${book.isbn10})`);
-      });
-      
-      if (newBooks.length > 3) {
-        console.log(`   ... and ${newBooks.length - 3} more books`);
-      }
-    }
-    
-  } catch (error) {
-    console.log(`❌ Batch sync error: ${error.message}`);
-    
-    // Fallback to individual inserts if batch fails
-    console.log('🔄 Falling back to individual inserts...');
-    return await syncBooksToBookModel(trendingBooks);
-  }
-  
-  console.log(`📊 Book Sync Results: ${results.added} added, ${results.existing} existing, ${results.errors} errors`);
   return results;
 }
 
@@ -457,11 +459,7 @@ function extractISBN(identifiers, type) {
 function generateValidISBN(seed) {
   const timestamp = Date.now().toString();
   const seedNum = (seed || '').replace(/\D/g, '') || '1';
-  const combined = (seedNum + timestamp).slice(-10).padStart(10, '0');
-  
-  // Add some randomness to avoid collisions
-  const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return (combined + randomSuffix).slice(-10);
+  return (seedNum + timestamp).slice(-10).padStart(10, '0');
 }
 
 function cleanText(text, maxLength) {
@@ -502,90 +500,14 @@ function generateRealisticRatingsCount() {
   return Math.floor(Math.random() * 25000) + 500;
 }
 
-// Enhanced duplicate removal with ISBN-based deduplication
 function removeDuplicates(books) {
-  const seenISBNs = new Set();
-  const seenTitles = new Set();
-  
+  const seen = new Set();
   return books.filter(book => {
-    // Check ISBN duplicates first (most reliable)
-    if (seenISBNs.has(book.isbn10)) {
-      return false;
-    }
-    
-    // Check title + author combination
-    const titleKey = `${book.title.toLowerCase().replace(/[^\w]/g, '')}_${book.authors.toLowerCase()}`;
-    if (seenTitles.has(titleKey)) {
-      return false;
-    }
-    
-    seenISBNs.add(book.isbn10);
-    seenTitles.add(titleKey);
+    const key = `${book.title.toLowerCase().replace(/[^\w]/g, '')}_${book.authors.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
-}
-
-// Enhanced database operation with better error handling for trending books
-async function updateTrendingBooksInDB(books) {
-  console.log('\n💾 Updating TrendingBook collection...');
-  
-  // Ensure each book has _id set to isbn10 for trending books too
-  const booksWithCorrectId = books.map(book => ({
-    _id: book.isbn10,
-    ...book
-  }));
-  
-  try {
-    // Method 1: Use deleteMany + insertMany with session for atomicity
-    const session = await mongoose.startSession();
-    
-    try {
-      await session.withTransaction(async () => {
-        // Clear existing trending books
-        const deleteResult = await TrendingBook.deleteMany({}, { session });
-        console.log(`✅ Cleared ${deleteResult.deletedCount} existing trending books`);
-        
-        // Insert new trending books
-        if (booksWithCorrectId.length > 0) {
-          const insertResult = await TrendingBook.insertMany(booksWithCorrectId, { session });
-          console.log(`✅ Inserted ${insertResult.length} new trending books`);
-        }
-      });
-    } finally {
-      await session.endSession();
-    }
-    
-  } catch (error) {
-    console.log('⚠️ Transaction method failed, trying alternative approach...');
-    
-    // Method 2: Drop collection and recreate (more aggressive)
-    try {
-      await mongoose.connection.db.collection('trendingbooks').drop();
-      console.log('✅ Dropped existing trendingbooks collection');
-    } catch (dropError) {
-      // Collection might not exist, that's okay
-      console.log('ℹ️ Collection drop skipped (might not exist)');
-    }
-    
-    // Insert new books
-    if (booksWithCorrectId.length > 0) {
-      // Insert one by one to handle any remaining duplicates
-      let insertedCount = 0;
-      for (const book of booksWithCorrectId) {
-        try {
-          await mongoose.connection.db.collection('trendingbooks').insertOne(book);
-          insertedCount++;
-        } catch (insertError) {
-          if (insertError.code === 11000) {
-            console.log(`⚠️ Skipped duplicate: ${book.title}`);
-          } else {
-            console.log(`❌ Insert error for "${book.title}": ${insertError.message}`);
-          }
-        }
-      }
-      console.log(`✅ Inserted ${insertedCount} trending books`);
-    }
-  }
 }
 
 // Main optimized update function
@@ -636,33 +558,32 @@ export async function updateTrendingBooks() {
       throw new Error('No valid books collected');
     }
     
-    // Update database with enhanced error handling
-    await updateTrendingBooksInDB(finalBooks);
-    
-    // Sync to Book model - using batch method for better performance
-    const bookSyncResults = await syncBooksToBookModelBatch(finalBooks);
-    
-    // Alternative: Individual sync method (use if batch method fails)
-    // const bookSyncResults = await syncBooksToBookModel(finalBooks);
+    // Save to both models
+    const saveResults = await saveBooksToModels(finalBooks);
     
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
     
     console.log(`\n🎉 SUCCESS! Update completed in ${totalTime} seconds`);
     console.log(`📚 Final Results:`);
-    console.log(`   - ${finalBooks.length} trending books updated`);
-    console.log(`   - ${bookSyncResults.added} new books added to Book model`);
+    console.log(`   - ${finalBooks.length} trending books processed`);
+    console.log(`   - ${saveResults.trending.added} new trending books saved`);
+    console.log(`   - ${saveResults.book.added} new books added to Book model`);
     console.log(`🖼️ All books have valid CORS-enabled thumbnails`);
-    console.log(`🔑 All books have _id = isbn10 for consistency`);
     
     // Show sample book
     if (finalBooks.length > 0) {
       const sample = finalBooks[0];
-      console.log(`\n📋 Sample Book:`);
-      console.log(`   ID: ${sample.isbn10}`);
-      console.log(`   Title: "${sample.title}"`);
-      console.log(`   Author: ${sample.authors}`);
-      console.log(`   Rating: ${sample.average_rating} (${sample.ratings_count} ratings)`);
-      console.log(`   Image: ${sample.thumbnail}`);
+      console.log(`\n📋 Sample Book Structure:`);
+      console.log(`   _id: "${sample._id}"`);
+      console.log(`   isbn10: "${sample.isbn10}"`);
+      console.log(`   title: "${sample.title}"`);
+      console.log(`   authors: "${sample.authors}"`);
+      console.log(`   categories: "${sample.categories}"`);
+      console.log(`   thumbnail: "${sample.thumbnail}"`);
+      console.log(`   description: "${sample.description.substring(0, 100)}..."`);
+      console.log(`   published_year: ${sample.published_year}`);
+      console.log(`   average_rating: ${sample.average_rating}`);
+      console.log(`   ratings_count: ${sample.ratings_count}`);
     }
     
     // Return structured result
@@ -672,7 +593,7 @@ export async function updateTrendingBooks() {
         books: finalBooks,
         count: finalBooks.length,
         processingTime: totalTime,
-        bookSyncResults: bookSyncResults,
+        saveResults: saveResults,
         summary: {
           totalCollected: allBooks.length,
           finalSelection: finalBooks.length,
