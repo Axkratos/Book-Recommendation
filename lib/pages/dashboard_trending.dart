@@ -4,6 +4,7 @@ import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/services/booksapi.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DashboardTrending extends StatefulWidget {
@@ -111,9 +112,16 @@ class _DashboardTrendingState extends State<DashboardTrending> {
                     child: ListView.builder(
                       itemCount: _books.length,
                       itemBuilder: (context, index) {
-                        return VintageBookCard(
-                          book: _books[index],
-                          rank: index + 1,
+                        return GestureDetector(
+                          onTap: () {
+                            context.go(
+                              '/book/${_books[index].isbn}/${_books[index].title}',
+                            );
+                          },
+                          child: VintageBookCard(
+                            book: _books[index],
+                            rank: index + 1,
+                          ),
                         );
                       },
                     ),

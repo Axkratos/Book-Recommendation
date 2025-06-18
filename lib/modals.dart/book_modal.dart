@@ -7,6 +7,7 @@ class Book {
   final double averageRating;
   final int ratingsCount;
   final String? description;
+  final String? isbn;
 
   Book({
     required this.id,
@@ -17,10 +18,12 @@ class Book {
     required this.averageRating,
     required this.ratingsCount,
     required this.description,
+    this.isbn,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
+      isbn: json['isbn10'] ?? '',
       id: json['_id'] ?? '',
       title: json['title'] ?? 'Unknown Title',
       authors: json['authors'] ?? 'Unknown Author',
