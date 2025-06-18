@@ -1044,10 +1044,14 @@ export const getReviewsByBook = async (req, res) => {
 
 export const deleteReview = async (req, res) => {
   const userId = req.user.id;
-  const { isbn } = req.params;
+  const  reviewID  = req.params.id;
+
 
   try {
-    const reviewDoc = await Review.findOne({ user: userId, isbn });
+    const reviewDoc = await Review.findByIdAndDelete({
+      _id: reviewID,
+      user: userId, // Ensure the user owns the review
+    });
     if (!reviewDoc) {
       return res.status(404).json({
         status: "fail",
@@ -1055,7 +1059,7 @@ export const deleteReview = async (req, res) => {
       });
     }
 
-    await reviewDoc.remove();
+    
 
     res.status(200).json({
       status: "success",

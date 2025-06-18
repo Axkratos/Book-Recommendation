@@ -67,10 +67,10 @@ app.use(express.static("public"));
 // Setting up cookie parser
 app.use(cookieParser());
 
-cron.schedule("0 2 * * *", () => {
-  console.log("🕑 [Cron] Running daily trending update at 2:00 AM…");
-  updateTrendingBooks();
-});
+// cron.schedule("0 2 * * *", () => {
+//   console.log("🕑 [Cron] Running daily trending update at 2:00 AM…");
+//   updateTrendingBooks();
+// });
 
 //  updateTrendingBooks();
 
@@ -78,10 +78,12 @@ cron.schedule("0 2 * * *", () => {
 import userRoutes from "./routes/userRoute.js";
 import authRoutes from "./routes/authRoute.js";
 import bookRoutes from "./routes/bookRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
 
 // Setting the routes
 app.use("/api/v1/users/", usersLimiter, userRoutes);
 app.use("/api/v1/auth/", authLimiter, authRoutes);
 app.use("/api/v1/books/", booksLimiter, bookRoutes);
+app.use("/api/v1/admin/", adminRoutes);
 
 export { app };
