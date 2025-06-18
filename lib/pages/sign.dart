@@ -214,6 +214,21 @@ class _SignInPageState extends State<SignInPage> {
                           ),
                         ],
                       ),
+                      TextButton(
+                        onPressed: () {
+                          // Navigates to /signin/forgot-password
+                          context.go('/signin/forgot-password');
+                        },
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

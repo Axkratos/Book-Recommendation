@@ -9,8 +9,10 @@ import 'package:bookrec/pages/dashboard_home.dart';
 import 'package:bookrec/pages/dashboard_shelf.dart';
 import 'package:bookrec/pages/dashboard_discussion.dart';
 import 'package:bookrec/pages/dashboard_trending.dart';
+import 'package:bookrec/pages/forgotPassword.dart';
 import 'package:bookrec/pages/isLoading.dart';
 import 'package:bookrec/pages/likeBook.dart';
+import 'package:bookrec/pages/resetPassword.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
 import 'package:bookrec/pages/verifyEmail.dart';
@@ -33,11 +35,26 @@ void main() async {
 }
 
 final GoRouter _router = GoRouter(
-  //initialLocation: '/',
   routes: [
+    // These routes are NOT wrapped in Homepage
+    GoRoute(
+      path: '/reset-password/:token',
+      builder: (context, state) {
+        final token = state.pathParameters['token']!;
+        return ResetPasswordPage(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/verify-email/:token',
+      builder: (context, state) {
+        final token = state.pathParameters['token']!;
+        return Isloading(token: token);
+      },
+    ),
+    // ShellRoute wraps all dashboard/homepage routes
     ShellRoute(
       builder: (BuildContext context, GoRouterState state, Widget child) {
-        return Homepage(child: child); // This is your shared layout
+        return Homepage(child: child);
       },
       routes: [
         GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
@@ -75,16 +92,6 @@ final GoRouter _router = GoRouter(
             print('Book ID: $id, Title: $title');
 
             return BookAndSimilar(bookId: id, title: title);
-          },
-        ),
-        GoRoute(
-          path: '/verify-email/:token',
-          builder: (context, state) {
-            //final id = state.pathParameters['id']!;
-            final token = state.pathParameters['token']!;
-            //final decodedTitle = Uri.decodeComponent(title);
-            //print('Book ID: $id, Title: $title');
-            return Isloading(token: token);
           },
         ),
         GoRoute(
@@ -143,6 +150,10 @@ final GoRouter _router = GoRouter(
       path: '/signin',
       builder: (context, state) => const SignInPage(),
       routes: [
+        GoRoute(
+          path: 'forgot-password',
+          builder: (context, state) => const ForgotPasswordPage(),
+        ),
         GoRoute(
           path: 'signup',
           builder: (context, state) => const SignUpPage(),
