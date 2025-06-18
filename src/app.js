@@ -20,7 +20,7 @@ const usersLimiter = rateLimit({
 // 2) Auth endpoints: very strict
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // only 5 login/signup attempts
+  max: 30, // only 5 login/signup attempts
   standardHeaders: true,
   legacyHeaders: false,
   message: { status: 429, error: "Too many auth attempts, try again later." },

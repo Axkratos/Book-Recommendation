@@ -282,12 +282,43 @@ export const deleteComment = async (req, res, next) => {
 };
 
 
+export const getAllUsers = async (req, res, next) => {
+  try {
+    // Parse page & limit from query, default to 1 & 10
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip = (page - 1) * limit;
 
+    // Fetch users and count in parallel
+    const [users, totalUsers] = await Promise.all([
+      User.find()
+        .select('-password')
+        .sort({ _id: -1 })   // newest first
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(),
+    ]);
+
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    res.status(200).json({
+      status: 'success',
+      results: users.length,
+      page,
+      limit,
+      totalPages,
+      totalUsers,
+      data: users,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // Get user profile
 export const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.params.id).select('-password');
     res.status(200).json({ status: 'success', data: user });
   } catch (err) {
     next(err);
@@ -316,14 +347,7 @@ export const deleteUser = async (req, res, next) => {
 };
 
 
-export const getAllUsers = async (req, res, next) => {
-  try {
-    const users = await User.find().select('-password');
-    res.status(200).json({ status: 'success', data: users });
-  } catch (err) {
-    next(err);
-  }
-};
+
 
 // Admin: Get dashboard stats
 export const getDashboardStats = async (req, res, next) => {
