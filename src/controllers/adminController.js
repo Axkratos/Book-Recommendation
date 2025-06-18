@@ -10,7 +10,7 @@ import Forum from "../models/forumModel.js";
 import Report from "../models/reportModel.js";
 import Comment from "../models/commentModel.js";
 
-// Create a new book
+// Create a new book//yeha id ley create garni
 export const createBook = async (req, res, next) => {
   try {
     const book = await Book.create(req.body);
@@ -23,8 +23,8 @@ export const createBook = async (req, res, next) => {
 // Get a single book by ISBN
 export const getBook = async (req, res, next) => {
   try {
-    const { isbn } = req.params;
-    const book = await Book.findOne({ isbn10: isbn }).select('-__v');
+    const  isbn  = req.params.id;
+    const book = await Book.findById({ _id:isbn }).select('-__v');
     if (!book) return res.status(404).json({ status: 'fail', message: 'Book not found.' });
     res.status(200).json({ status: 'success', data: book });
   } catch (err) {
@@ -32,21 +32,45 @@ export const getBook = async (req, res, next) => {
   }
 };
 
-// Get all books (with optional filters)
+// controllers/book.controller.js
 export const getBooks = async (req, res, next) => {
   try {
-    const books = await Book.find().select('-__v');
-    res.status(200).json({ status: 'success', data: books });
+    // 1) Parse page & limit
+    const page  = Math.max(parseInt(req.query.page, 10)  || 1,  1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip  = (page - 1) * limit;
+
+    // 2) Total count
+    const totalBooks = await Book.countDocuments();
+
+    // 3) Fetch paginated, sorted newest-first
+    const books = await Book.find()
+      .select('-__v')
+      .sort({ createdAt: -1 })  // <-- newest added first
+      .skip(skip)
+      .limit(limit);
+
+    // 4) Send response
+    res.status(200).json({
+      status: 'success',
+      results: books.length,
+      page,
+      limit,
+      totalPages: Math.ceil(totalBooks / limit),
+      totalBooks,
+      data: books
+    });
   } catch (err) {
     next(err);
   }
 };
 
+
 // Update a book by ISBN
 export const updateBook = async (req, res, next) => {
   try {
-    const { isbn } = req.params;
-    const book = await Book.findOneAndUpdate({ isbn10: isbn }, req.body, { new: true, runValidators: true });
+    const isbn  = req.params.id;
+    const book = await Book.findByIdAndUpdate({ _id: isbn }, req.body, { new: true, runValidators: true });
     if (!book) return res.status(404).json({ status: 'fail', message: 'Book not found.' });
     res.status(200).json({ status: 'success', data: book });
   } catch (err) {
@@ -57,8 +81,8 @@ export const updateBook = async (req, res, next) => {
 // Delete a book by ISBN
 export const deleteBook = async (req, res, next) => {
   try {
-    const { isbn } = req.params;
-    const book = await Book.findOneAndDelete({ isbn10: isbn });
+    const isbn = req.params.id;
+    const book = await Book.findByIdAndDelete({ _id: isbn });
     if (!book) return res.status(404).json({ status: 'fail', message: 'Book not found.' });
     res.status(204).json({ status: 'success', data: null });
   } catch (err) {
@@ -78,6 +102,53 @@ export const createForum = async (req, res, next) => {
   }
 };
 
+export const getAllForums = async (req, res, next) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const skip = (page - 1) * limit;
+
+    const [forums, totalMatches] = await Promise.all([
+      Forum.find({})
+        .populate('userId', 'fullName')
+        .sort({ createdAt: -1 }) // newest first
+        .skip(skip)
+        .limit(limit),
+      Forum.countDocuments(),
+    ]);
+
+    const totalPages = Math.ceil(totalMatches / limit);
+
+    res.status(200).json({
+      status: 'success',
+      data: forums,
+      pagination: {
+        page,
+        limit,
+        totalMatches,
+        totalPages,
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getForumById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const forum = await Forum.findById(id).populate('userId', 'fullName');
+
+    if (!forum) {
+      return res.status(404).json({ status: 'fail', message: 'Forum not found' });
+    }
+
+    res.status(200).json({ status: 'success', data: forum });
+  } catch (err) {
+    next(err);
+  }
+};
 // Get threads by ISBN
 export const getForumsByISBN = async (req, res, next) => {
   try {
@@ -237,7 +308,7 @@ export const updateUserProfile = async (req, res, next) => {
 // Delete user (deactivate)
 export const deleteUser = async (req, res, next) => {
   try {
-    await User.findByIdAndDelete(req.user.id);
+    await User.findByIdAndDelete(req.params.id);
     res.status(204).json({ status: 'success', data: null });
   } catch (err) {
     next(err);
@@ -309,19 +380,38 @@ export const createReport = async (req, res) => {
 /** 2) List / Search reports */
 export const getReports = async (req, res) => {
   try {
-    const { type, targetId } = req.query;
+    const { type, targetId, page = 1, limit = 10 } = req.query;
     const filter = {};
     if (type)     filter.type = type;
     if (targetId) filter.targetId = targetId;
 
+    // Convert to numbers & enforce minimums
+    const pageNum  = Math.max(parseInt(page, 10), 1);
+    const limitNum = Math.max(parseInt(limit, 10), 1);
+    const skip     = (pageNum - 1) * limitNum;
+
+    // Get total count for metadata
+    const totalReports = await Report.countDocuments(filter);
+
+    // Fetch paginated results
     const reports = await Report.find(filter)
       .populate('reporter', 'fullName email')
       .populate('createdBy', 'fullName email')
-      .sort('-createdAt');
+      .sort('-createdAt')
+      .skip(skip)
+      .limit(limitNum);
 
-    res.status(200).json({ status:'success', results: reports.length, data: reports });
+    res.status(200).json({
+      status: 'success',
+      results: reports.length,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalReports / limitNum),
+      totalReports,
+      data: reports
+    });
   } catch (err) {
-    res.status(500).json({ status:'error', message: err.message });
+    res.status(500).json({ status: 'error', message: err.message });
   }
 };
 
@@ -354,6 +444,19 @@ export const getReportById = async (req, res) => {
       status:'success',
       data: { report, related }
     });
+  } catch (err) {
+    res.status(500).json({ status:'error', message: err.message });
+  }
+};
+
+
+export const deleteReport = async (req, res) => {
+  try {
+    const report = await Report.findByIdAndDelete(req.params.id);
+    if (!report) {
+      return res.status(404).json({ status:'fail', message:'Report not found' });
+    }
+    res.status(200).json({ status:'success', message:'Report deleted' });
   } catch (err) {
     res.status(500).json({ status:'error', message: err.message });
   }

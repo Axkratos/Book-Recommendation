@@ -26,7 +26,7 @@ import {
   getDashboardStats
 } from '../controllers/adminController.js';
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
-
+import { getReports,getReportById,deleteReport,getAllForums,getForumById } from '../controllers/adminController.js';
 const router = express.Router();
 
 // Protect all routes and restrict to admin
@@ -36,14 +36,15 @@ router.use(restrictTo('admin'));
 // Book routes
 router.post('/books', createBook);
 router.get('/books', getBooks);
-router.get('/books/:isbn', getBook);
-router.patch('/books/:isbn', updateBook);
-router.delete('/books/:isbn', deleteBook);
+router.get('/books/:id', getBook);
+router.patch('/books/:id', updateBook);
+router.delete('/books/:id', deleteBook);
+
+
 
 // Forum routes
-router.post('/forums', createForum);
-router.get('/forums/book/:isbn', getForumsByISBN);
-router.patch('/forums/:id', updateForum);
+router.get('/forums', getAllForums);
+router.get('/forums/:id', getForumById);
 router.delete('/forums/:id', deleteForum);
 
 
@@ -62,10 +63,15 @@ router.delete('/comments/:id', deleteComment);
 // User profile routes (admin can view/edit any profile too)
 router.get('/users/me', getUserProfile);
 router.patch('/users/me', updateUserProfile);
-router.delete('/users/me', deleteUser);
+router.delete('/users/:id', deleteUser);
 
 // Admin-specific routes
 router.get('/users', getAllUsers);
 router.get('/stats', getDashboardStats);
+
+// Report routes
+router.get('/reports', getReports);
+router.get('/reports/:id', getReportById);
+router.delete('/reports/:id', deleteReport);
 
 export default router;
