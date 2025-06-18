@@ -5,6 +5,7 @@ import { likeBooks,getLLMRecommendations,getTrendingBooks,addRating ,getItemBase
 import { addBookToShelf,getShelfBooks,removeBookFromShelf,checkBookInShelf } from '../controllers/shelfController.js';
 import { createForum,deleteForum,toggleLikeForum,hasLikedForum,updateForum ,getUserForums} from '../controllers/forumController.js';
 import { createComment,getCommentsByForum,getCommentsByUser,hasUserCommented,updateComment,deleteComment } from '../controllers/commentController.js';
+import { createReport} from '../controllers/adminController.js';
 const router = express.Router();
 
 router.use(protect);
@@ -75,5 +76,8 @@ router.get('/random/unrated', getRandomUnratedBooks);
 router.post('/review', upsertReview);
 router.get('/review/book/:isbn', getReviewsByBook);
 router.delete('/review/:id', deleteReview);
+//create report
+router.post('/report', createReport);
+
 
 export default router;

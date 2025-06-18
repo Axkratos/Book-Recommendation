@@ -7,7 +7,8 @@ import Rating from "../models/ratingModel.js";
 import NodeCache from "node-cache";
 import Review from "../models/reviewModel.js";
 import Forum from "../models/forumModel.js";
-
+import Report from "../models/reportModel.js";
+import Comment from "../models/commentModel.js";
 
 // Create a new book
 export const createBook = async (req, res, next) => {
@@ -272,5 +273,88 @@ export const getDashboardStats = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+
+//controllers for report
+
+export const createReport = async (req, res) => {
+  try {
+    const { type, targetId, content, createdBy } = req.body;
+    const reporter = req.user.id;
+
+    // optional: verify target exists
+    let Model;
+    if (type === 'comment') Model = Comment;
+    else if (type === 'review') Model = Review;
+    else if (type === 'forum')  Model = Forum;
+    else throw new Error('Invalid report type');
+
+    const target = await Model.findById(targetId);
+    if (!target) {
+      return res.status(404).json({ status:'fail', message:'Target not found' });
+    }
+
+    const report = await Report.create({
+      type, targetId, content, reporter, createdBy
+    });
+
+    res.status(201).json({ status:'success', data: report });
+  } catch (err) {
+    res.status(500).json({ status:'error', message: err.message });
+  }
+};
+
+/** 2) List / Search reports */
+export const getReports = async (req, res) => {
+  try {
+    const { type, targetId } = req.query;
+    const filter = {};
+    if (type)     filter.type = type;
+    if (targetId) filter.targetId = targetId;
+
+    const reports = await Report.find(filter)
+      .populate('reporter', 'fullName email')
+      .populate('createdBy', 'fullName email')
+      .sort('-createdAt');
+
+    res.status(200).json({ status:'success', results: reports.length, data: reports });
+  } catch (err) {
+    res.status(500).json({ status:'error', message: err.message });
+  }
+};
+
+/** 3) View one report, plus its actual content */
+export const getReportById = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id)
+      .populate('reporter', 'fullName email')
+      .populate('createdBy', 'fullName email');
+
+    if (!report) {
+      return res.status(404).json({ status:'fail', message:'Report not found' });
+    }
+
+    // load the actual object being reported
+    let related;
+    switch (report.type) {
+      case 'comment':
+        related = await Comment.findById(report.targetId);
+        break;
+      case 'review':
+        related = await Review.findById(report.targetId);
+        break;
+      case 'forum':
+        related = await Forum.findById(report.targetId);
+        break;
+    }
+
+    res.status(200).json({
+      status:'success',
+      data: { report, related }
+    });
+  } catch (err) {
+    res.status(500).json({ status:'error', message: err.message });
   }
 };
