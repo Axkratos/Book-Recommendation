@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bookrec/modals.dart/forum_modal.dart';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/services/discussApi.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,8 @@ import 'package:bookrec/components/VintageButton.dart';
 import 'package:bookrec/components/vintage_feed.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:bookrec/theme/dashboard_title.dart';
-import 'package:bookrec/pages/dashboard_home.dart'; // <-- Add this line
+import 'package:bookrec/pages/dashboard_home.dart';
+import 'package:provider/provider.dart'; // <-- Add this line
 
 /// Safely decode JSON content into a List<dynamic> for Quill
 dynamic safeDecode(dynamic body) {
@@ -43,20 +45,29 @@ class _DiscussionPageState extends State<DiscussionPage> {
   int _currentPage = 1;
   int _totalPages = 1;
   bool _isLoading = false;
+  bool _showUserForums = false; // <-- Add this
 
   final discuss = Discussapi();
 
   @override
   void initState() {
     super.initState();
-    _loadPage(_currentPage);
+    final provider = Provider.of<UserProvider>(context, listen: false);
+
+    _loadPage(_currentPage, provider.token); // <-- Pass the token
   }
 
-  Future<void> _loadPage(int page) async {
+  Future<void> _loadPage(int page, String token) async {
     setState(() => _isLoading = true);
 
     try {
-      final response = await discuss.fetchForums(page: page);
+      final response =
+          _showUserForums
+              ? await discuss.fetchUsersForums(
+                page: page,
+                token: token,
+              ) // <-- Add this method
+              : await discuss.fetchForums(page: page);
       print('Fetched forums for page $response');
       setState(() {
         _forums = response.forums;
@@ -64,7 +75,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
         _totalPages = response.totalPages;
       });
     } catch (e) {
-      debugPrint('Error fetching forums1: $e');
+      debugPrint('Error fetching forums: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -74,7 +85,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
     return List<Widget>.generate(_totalPages, (i) {
       final page = i + 1;
       return TextButton(
-        onPressed: () => _loadPage(page),
+        onPressed:
+            () => _loadPage(
+              page,
+              Provider.of<UserProvider>(context, listen: false).token,
+            ),
         child: Text(
           '$page',
           style: TextStyle(
@@ -111,10 +126,19 @@ class _DiscussionPageState extends State<DiscussionPage> {
                     children: [
                       SectionHeader(title: 'Discussion / Forum'),
                       VintageButton(
-                        text: '+ Create Discussion',
-                        onPressed:
-                            () =>
-                                context.go('/dashboard/discussion/writereview'),
+                        text: _showUserForums ? 'Global' : 'User',
+                        onPressed: () {
+                          setState(() {
+                            _showUserForums = !_showUserForums;
+                          });
+                          _loadPage(
+                            1,
+                            Provider.of<UserProvider>(
+                              context,
+                              listen: false,
+                            ).token,
+                          ); // Reload forums for the new mode
+                        },
                       ),
                     ],
                   ),
@@ -187,3 +211,6 @@ class _DiscussionPageState extends State<DiscussionPage> {
     );
   }
 }
+
+// Add this to your Discussapi class (in discussApi.dart):
+// (Make sure to handle authorization headers as needed)

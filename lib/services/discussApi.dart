@@ -58,6 +58,38 @@ class Discussapi {
     }
   }
 
+  Future<ForumPageResponse> fetchUsersForums({
+    int page = 1,
+    int limit = 5,
+    required String token,
+  }) async {
+    final String url =
+        '${baseUrl}/api/v1/books/forum/user?page=$page&limit=$limit';
+    print('Fetching forums from: $url'); // Debugging line to check URL
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Response status: ${response.statusCode}'); // Debugging line
+      //print('Response body: ${response.body}'); // Debugging line
+      final data = json.decode(response.body);
+      List forums = data['data'];
+      print('Forums fetched: ${data['totalPages']}'); // Debugging line
+      return ForumPageResponse(
+        forums: forums.map((json) => Forum.fromJson(json)).toList(),
+        totalPages: data['totalPages'],
+      );
+    } else {
+      throw Exception('Failed to load forum data');
+    }
+  }
+
   Future<String> CreateComment({
     required String isbn,
     required String forumId,
