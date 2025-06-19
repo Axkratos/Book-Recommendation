@@ -475,6 +475,74 @@ def recommend_books_logic(text: str) -> List[Book]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ISBN10_RE = re.compile(r"\b\d{9}[0-9X]\b")
+# def recommend_books_logic(
+#     text: str,
+#     top_k: int = 12
+# ) -> List[Book]:
+#     try:
+#         # 1) Vector search
+#         docs = db_books.similarity_search(text, k=top_k * 2)
+#         print(f"📚 DB has {db_books._collection.count()} vectors; found {len(docs)} candidates for “{text}”")
+
+#         # 2) Extract up to top_k valid, unique ISBN10s
+#         seen, unique_isbns = set(), []
+#         valid_isbns = set(books["isbn10"].astype(str))
+#         for doc in docs:
+#             m = re.search(r"\b\d{9}[0-9X]\b", doc.page_content or "")
+#             if not m:
+#                 continue
+#             isbn = m.group(0)
+#             if isbn in valid_isbns and isbn not in seen:
+#                 seen.add(isbn)
+#                 unique_isbns.append(isbn)
+#             if len(unique_isbns) >= top_k:
+#                 break
+#         print(f"🔖 Matched ISBN10s: {unique_isbns}")
+
+#         if not unique_isbns:
+#             print("⚠️ No valid ISBNs matched!")
+#             return []
+
+#         # 3) Filter the DataFrame
+#         books["isbn10"] = books["isbn10"].astype(str)
+#         print(f"📘 Attempting to filter books dataframe with {len(unique_isbns)} ISBNs")
+
+#         filtered_df = books[books["isbn10"].isin(unique_isbns)].copy()
+
+#         print(f"✅ Filtered books shape: {filtered_df.shape}")
+#         print(f"📘 Columns: {filtered_df.columns.tolist()}")
+#         print(filtered_df[["isbn10", "title"]].head())
+
+#         # 4) Marshal into Book objects
+#         result: List[Book] = []
+
+#         for i, row in filtered_df.iterrows():
+#             try:
+#                 result.append(Book(
+#                     isbn10=row.get("isbn10", ""),
+#                     title=row.get("title", ""),
+#                     authors=row.get("authors", ""),
+#                     categories=row.get("categories", ""),
+#                     thumbnail=str(row.get("thumbnail", "")),
+#                     description=row.get("description", ""),
+#                     published_year=int(row.get("published_year", 0)),
+#                     average_rating=float(row.get("average_rating", 0)),
+#                     ratings_count=int(row.get("ratings_count", 0)),
+#                 ))
+#             except Exception as inner_e:
+#                 print(f"❌ Error processing row {i}: {row.to_dict()}")
+#                 print(f"💥 Inner error: {inner_e}")
+#                 raise
+
+#         print(f"✅ Successfully created {len(result)} Book objects")
+#         return result
+
+#     except Exception as e:
+#         print(f"🔥 Fatal Error: {e}")
+#         raise HTTPException(status_code=500, detail=f"Recommendation error: {e}")
+
+
 def fold_in_user(ratings: Dict[str, float]) -> np.ndarray:
     n_items = len(models.item_idx_map)
     row = np.zeros(n_items, dtype=float)

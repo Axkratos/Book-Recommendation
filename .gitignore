@@ -1,2 +1,4 @@
 env
 .env
+chroma_db2
+books_cleaned2.csv
