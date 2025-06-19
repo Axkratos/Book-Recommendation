@@ -65,7 +65,7 @@ export const getAllForums = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('userId', 'name');
+      .populate('userId', 'fullName');
 
     const total = await Forum.countDocuments();
 
@@ -87,7 +87,7 @@ export const getForumById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const forum = await Forum.findById(id).populate('userId', 'name');
+    const forum = await Forum.findById(id).populate('userId', 'fullName');
 
     if (!forum) {
       return res.status(404).json({ status: 'fail', message: 'Forum not found' });
