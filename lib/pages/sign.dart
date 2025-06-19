@@ -162,9 +162,9 @@ class _SignInPageState extends State<SignInPage> {
                                 ProviderUser.setToken = response['token'];
                                 context.go('/dashboard/home');
                               } else if (response['status'] == 'failed') {
+                                print('Login failed: ${response['status']}');
                                 setState(() {
-                                  errorMessage =
-                                      'An error occurred. Please try again.';
+                                  errorMessage = '${response['message']}';
                                 });
                               }
 

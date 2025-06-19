@@ -86,9 +86,11 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
       });
     });
     ws.onMessage.listen((event) {
+      if (!mounted) return;
       final data = jsonDecode(event.data);
       switch (data['type']) {
         case 'connection':
+          if (!mounted) return;
           setState(() {
             _messages.add({
               'role': 'system',
@@ -98,6 +100,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
           });
           break;
         case 'message':
+          if (!mounted) return;
           setState(() {
             _messages.add({
               'role': data['role'],
@@ -108,11 +111,13 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
           });
           break;
         case 'typing':
+          if (!mounted) return;
           setState(() {
             _isTyping = data['status'];
           });
           break;
         case 'upload_status':
+          if (!mounted) return;
           setState(() {
             _uploadStatus = data['message'];
             if (data['status'] == 'success') {
@@ -127,6 +132,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
           });
           break;
         case 'error':
+          if (!mounted) return;
           setState(() {
             _messages.add({
               'role': 'system',
@@ -140,12 +146,14 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
       _scrollToBottom();
     });
     ws.onClose.listen((event) {
+      if (!mounted) return;
       setState(() {
         _isConnected = false;
         _ws = null;
       });
     });
     ws.onError.listen((event) {
+      if (!mounted) return;
       setState(() {
         _isConnected = false;
       });
