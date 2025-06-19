@@ -136,7 +136,8 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
     if (result != null && result.isNotEmpty) {
       try {
-        final data = await discuss.reportForum(
+        final data = await discuss.report(
+          type: 'forum', // Specify the type of report
           forumId: forumId,
           reporterId: reporterId,
           token: token,

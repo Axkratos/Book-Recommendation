@@ -89,17 +89,18 @@ class Discussapi {
       throw Exception('Failed to load forum data');
     }
   }
+
   Future<Map<String, dynamic>> deleteForum(String forumId, String token) async {
-  final url = Uri.parse('$baseUrl/api/v1/books/forum/$forumId');
-  final response = await http.delete(
-    url,
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-  );
-  return jsonDecode(response.body);
-}
+    final url = Uri.parse('$baseUrl/api/v1/books/forum/$forumId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    return jsonDecode(response.body);
+  }
 
   Future<String> CreateComment({
     required String isbn,
@@ -131,11 +132,12 @@ class Discussapi {
     }
   }
 
-  Future<Map<String, dynamic>> reportForum({
+  Future<Map<String, dynamic>> report({
     required String forumId,
     required String reporterId,
     required String token,
     required String content,
+    required String type,
   }) async {
     final url = Uri.parse('$baseUrl/api/v1/books/report');
     final response = await http.post(
@@ -145,7 +147,7 @@ class Discussapi {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        "type": "forum",
+        "type": type,
         "targetId": forumId,
         "content": content,
         "createdBy": reporterId,
