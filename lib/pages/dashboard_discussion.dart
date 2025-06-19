@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http; // Add this import
 
 import 'package:bookrec/modals.dart/forum_modal.dart';
 import 'package:bookrec/provider/authprovider.dart';
@@ -103,6 +104,61 @@ class _DiscussionPageState extends State<DiscussionPage> {
     }
   }
 
+  Future<void> _reportForum({
+    required String forumId,
+    required String reporterId,
+    required String token,
+  }) async {
+    final TextEditingController _controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Report Forum'),
+            content: TextField(
+              controller: _controller,
+              decoration: InputDecoration(hintText: 'Describe the issue...'),
+              maxLines: 3,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.pop(context, _controller.text.trim()),
+                child: Text('Submit'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        final data = await discuss.reportForum(
+          forumId: forumId,
+          reporterId: reporterId,
+          token: token,
+          content: result,
+        );
+        if (data['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Report submitted. Thank you!')),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to submit report.')));
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
   List<Widget> _buildPaginationButtons() {
     return List<Widget>.generate(_totalPages, (i) {
       final page = i + 1;
@@ -179,6 +235,10 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                 final content = safeDecode(
                                   forum.discussionBody,
                                 );
+                                final userProvider = Provider.of<UserProvider>(
+                                  context,
+                                  listen: false,
+                                );
 
                                 return GestureDetector(
                                   onTap: () => context.go('/view/${forum.id}'),
@@ -213,6 +273,25 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                                   : 'Unknown time',
                                           'reason': 'Recommended for you',
                                         },
+                                      ),
+                                      Positioned(
+                                        top: 8,
+                                        right: 35, // Move flag to the far right
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.flag,
+                                            color: Colors.redAccent,
+                                          ),
+                                          tooltip: 'Report Forum',
+                                          onPressed: () async {
+                                            await _reportForum(
+                                              forumId: forum.id!,
+                                              reporterId: forum.userId!,
+                                              // Adjust if your user model differs
+                                              token: userProvider.token,
+                                            );
+                                          },
+                                        ),
                                       ),
                                       if (_showUserForums)
                                         Positioned(

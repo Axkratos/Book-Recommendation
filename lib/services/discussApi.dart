@@ -130,6 +130,29 @@ class Discussapi {
       return 'failed';
     }
   }
+
+  Future<Map<String, dynamic>> reportForum({
+    required String forumId,
+    required String reporterId,
+    required String token,
+    required String content,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/v1/books/report');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        "type": "forum",
+        "targetId": forumId,
+        "content": content,
+        "createdBy": reporterId,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
 }
 
 class ForumPageResponse {
