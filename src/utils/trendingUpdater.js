@@ -4,6 +4,7 @@ import TrendingBook from '../models/trendingModel.js';
 import Book from '../models/bookModel.js';
 
 const DESIRED_COUNT = 50;
+const MAX_FETCH_ATTEMPTS = 200; // Fetch up to 200 books to find 50 new ones
 
 // Optimized delays for faster processing
 const DELAYS = {
@@ -95,40 +96,94 @@ async function waitForDatabaseConnection() {
   throw new Error('Database connection timeout - please ensure MongoDB is connected');
 }
 
-// Fetch books from Google Books API with focus on fiction/sci-fi
-async function fetchGoogleBooksParallel() {
+// Generate more diverse and randomized search terms
+function generateSearchTerms() {
   const currentYear = new Date().getFullYear();
-  
-  // Curated search terms for fiction, sci-fi, and popular genres
-  const searchTerms = [
-    `fiction bestseller ${currentYear}`,
-    `science fiction ${currentYear}`,
-    `fantasy bestseller ${currentYear}`,
-    `mystery thriller ${currentYear}`,
-    `romance bestseller ${currentYear}`,
-    'contemporary fiction popular',
-    'literary fiction award',
-    'historical fiction bestseller',
-    'young adult fiction popular',
-    'dystopian fiction',
-    'urban fantasy',
-    'paranormal romance',
-    'crime fiction bestseller',
-    'adventure fiction',
-    'horror fiction popular'
+  const years = [currentYear, currentYear - 1, currentYear - 2];
+  const genres = [
+    'fiction', 'science fiction', 'fantasy', 'mystery', 'thriller', 
+    'romance', 'contemporary fiction', 'literary fiction', 'historical fiction',
+    'young adult', 'dystopian', 'urban fantasy', 'paranormal romance',
+    'crime fiction', 'adventure', 'horror', 'magical realism', 'steampunk',
+    'cyberpunk', 'space opera', 'epic fantasy', 'cozy mystery', 'psychological thriller',
+    'dark fantasy', 'alternate history', 'time travel', 'post apocalyptic'
   ];
   
-  console.log('📚 Fetching Google Books in parallel...');
+  const qualifiers = [
+    'bestseller', 'popular', 'award winning', 'critically acclaimed', 'new release',
+    'trending', 'recommended', 'must read', 'top rated', 'celebrated'
+  ];
   
-  const batchSize = 4;
+  const publishers = [
+    'penguin', 'random house', 'harpercollins', 'simon schuster', 'macmillan',
+    'scholastic', 'bantam', 'doubleday', 'vintage', 'tor books'
+  ];
+  
+  // Generate random combinations
+  const searchTerms = [];
+  
+  // Genre + Year combinations
+  for (const genre of genres) {
+    for (const year of years) {
+      searchTerms.push(`${genre} ${year}`);
+      searchTerms.push(`${genre} bestseller ${year}`);
+    }
+  }
+  
+  // Genre + Qualifier combinations
+  for (const genre of genres) {
+    for (const qualifier of qualifiers) {
+      searchTerms.push(`${genre} ${qualifier}`);
+    }
+  }
+  
+  // Publisher + Genre combinations
+  for (const publisher of publishers) {
+    for (const genre of genres.slice(0, 10)) { // Use subset to avoid too many
+      searchTerms.push(`${publisher} ${genre}`);
+    }
+  }
+  
+  // Add some author-based searches (random author initials)
+  const authorInitials = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'W'];
+  for (const initial of authorInitials) {
+    searchTerms.push(`author:${initial}* fiction`);
+  }
+  
+  // Shuffle and return
+  return shuffleArray(searchTerms);
+}
+
+// Shuffle array utility
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Fetch books from Google Books API with enhanced search variety
+async function fetchGoogleBooksParallel(maxBooks = MAX_FETCH_ATTEMPTS) {
+  const searchTerms = generateSearchTerms();
+  
+  console.log(`📚 Fetching Google Books with ${searchTerms.length} search terms...`);
+  
+  const batchSize = 5;
   const allBooks = [];
+  let processedTerms = 0;
   
-  for (let i = 0; i < searchTerms.length; i += batchSize) {
+  for (let i = 0; i < searchTerms.length && allBooks.length < maxBooks; i += batchSize) {
     const batch = searchTerms.slice(i, i + batchSize);
     
     const batchPromises = batch.map(async (term) => {
       try {
-        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&orderBy=relevance&maxResults=15&langRestrict=en&printType=books&filter=partial`;
+        // Randomize results per page and start index for variety
+        const maxResults = Math.floor(Math.random() * 20) + 15; // 15-35 results
+        const startIndex = Math.floor(Math.random() * 50); // Start from different positions
+        
+        const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&orderBy=relevance&maxResults=${maxResults}&startIndex=${startIndex}&langRestrict=en&printType=books&filter=partial`;
         
         const response = await axios.get(url, {
           timeout: 12000,
@@ -154,6 +209,12 @@ async function fetchGoogleBooksParallel() {
     
     const batchResults = await Promise.all(batchPromises);
     allBooks.push(...batchResults.flat());
+    processedTerms += batch.length;
+    
+    console.log(`📊 Progress: ${allBooks.length} books collected from ${processedTerms} search terms`);
+    
+    // Break if we have enough books
+    if (allBooks.length >= maxBooks) break;
     
     // Small delay between batches
     if (i + batchSize < searchTerms.length) {
@@ -197,26 +258,38 @@ function processGoogleBooksResponse(data) {
     .filter(isValidBook);
 }
 
-// Fetch books from Open Library API
-async function fetchOpenLibraryParallel() {
+// Enhanced Open Library fetching with more subjects
+async function fetchOpenLibraryParallel(maxBooks = MAX_FETCH_ATTEMPTS) {
   const subjects = [
     'fiction', 'science_fiction', 'fantasy', 'mystery', 'romance',
     'thriller', 'contemporary', 'literary_fiction', 'historical_fiction',
     'young_adult', 'dystopian', 'urban_fantasy', 'paranormal',
-    'crime', 'adventure', 'horror', 'magical_realism'
+    'crime', 'adventure', 'horror', 'magical_realism', 'steampunk',
+    'cyberpunk', 'space_opera', 'epic_fantasy', 'cozy_mystery',
+    'psychological_thriller', 'dark_fantasy', 'alternate_history',
+    'time_travel', 'post_apocalyptic', 'gothic', 'noir', 'western'
   ];
   
-  console.log('📖 Fetching Open Library in parallel...');
+  console.log('📖 Fetching Open Library with enhanced subject variety...');
   
-  const batchSize = 5;
+  const batchSize = 6;
   const allBooks = [];
+  let processedSubjects = 0;
   
-  for (let i = 0; i < subjects.length; i += batchSize) {
-    const batch = subjects.slice(i, i + batchSize);
+  // Shuffle subjects for variety
+  const shuffledSubjects = shuffleArray(subjects);
+  
+  for (let i = 0; i < shuffledSubjects.length && allBooks.length < maxBooks; i += batchSize) {
+    const batch = shuffledSubjects.slice(i, i + batchSize);
     
     const batchPromises = batch.map(async (subject) => {
       try {
-        const url = `https://openlibrary.org/subjects/${subject}.json?limit=10&details=true&published_in=2015-2024`;
+        // Vary the parameters for more diverse results
+        const limit = Math.floor(Math.random() * 15) + 10; // 10-25 results
+        const publishedYears = ['2010-2024', '2015-2024', '2020-2024'];
+        const yearRange = publishedYears[Math.floor(Math.random() * publishedYears.length)];
+        
+        const url = `https://openlibrary.org/subjects/${subject}.json?limit=${limit}&details=true&published_in=${yearRange}`;
         
         const response = await axios.get(url, {
           timeout: 15000,
@@ -237,8 +310,14 @@ async function fetchOpenLibraryParallel() {
     
     const batchResults = await Promise.all(batchPromises);
     allBooks.push(...batchResults.flat());
+    processedSubjects += batch.length;
     
-    if (i + batchSize < subjects.length) {
+    console.log(`📊 Progress: ${allBooks.length} books collected from ${processedSubjects} subjects`);
+    
+    // Break if we have enough books
+    if (allBooks.length >= maxBooks) break;
+    
+    if (i + batchSize < shuffledSubjects.length) {
       await delay(DELAYS.BATCH_DELAY);
     }
   }
@@ -252,7 +331,7 @@ async function processOpenLibraryResponse(data, subject) {
   
   const books = [];
   
-  for (const work of data.works.slice(0, 8)) {
+  for (const work of data.works.slice(0, 12)) { // Increased from 8 to 12
     if (!work.title || !work.authors) continue;
     
     try {
@@ -383,6 +462,39 @@ async function checkBookExists(isbn10, title) {
   }
 }
 
+// Filter out existing books and return only new ones
+async function filterNewBooks(books) {
+  console.log(`🔍 Filtering ${books.length} books for new entries...`);
+  
+  const newBooks = [];
+  const batchSize = 10;
+  
+  for (let i = 0; i < books.length; i += batchSize) {
+    const batch = books.slice(i, i + batchSize);
+    
+    const existenceChecks = await Promise.all(
+      batch.map(async (book) => {
+        const exists = await checkBookExists(book.isbn10, book.title);
+        return { book, exists };
+      })
+    );
+    
+    for (const { book, exists } of existenceChecks) {
+      if (!exists) {
+        newBooks.push(book);
+        if (newBooks.length >= DESIRED_COUNT) {
+          console.log(`✅ Found ${DESIRED_COUNT} new books, stopping search`);
+          return newBooks.slice(0, DESIRED_COUNT);
+        }
+      }
+    }
+    
+    console.log(`📊 Progress: ${newBooks.length}/${DESIRED_COUNT} new books found`);
+  }
+  
+  return newBooks;
+}
+
 // Save books to both models with consistent _id and uniqueness
 async function saveBooksToModels(books) {
   console.log('\n💾 Saving books to database models...');
@@ -395,15 +507,6 @@ async function saveBooksToModels(books) {
   for (const book of books) {
     try {
       const bookId = book.isbn10;
-      
-      // Check if book already exists in either model
-      const exists = await checkBookExists(bookId, book.title);
-      if (exists) {
-        results.trending.existing++;
-        results.book.existing++;
-        console.log(`⚠️ Book already exists: "${book.title}" (ID: ${bookId})`);
-        continue;
-      }
       
       // Prepare consistent book data for both models - EXPLICITLY SET _id
       const bookData = {
@@ -421,17 +524,9 @@ async function saveBooksToModels(books) {
       
       // Save to TrendingBook model using insertOne to bypass middleware
       try {
-        // Use raw collection query to avoid casting issues
-        const existingTrending = await TrendingBook.collection.findOne({ _id: bookId });
-        if (existingTrending) {
-          results.trending.existing++;
-          console.log(`📚 Trending book already exists: "${book.title}"`);
-        } else {
-          // Use insertOne to ensure _id is preserved exactly as provided
-          await TrendingBook.collection.insertOne(bookData);
-          results.trending.added++;
-          console.log(`✅ Trending saved: "${book.title}" (ID: ${bookId})`);
-        }
+        await TrendingBook.collection.insertOne(bookData);
+        results.trending.added++;
+        console.log(`✅ Trending saved: "${book.title}" (ID: ${bookId})`);
       } catch (trendingError) {
         if (trendingError.code === 11000) {
           results.trending.existing++;
@@ -444,17 +539,9 @@ async function saveBooksToModels(books) {
       
       // Save to Book model using insertOne to bypass middleware
       try {
-        // Use raw collection query to avoid casting issues
-        const existingBook = await Book.collection.findOne({ _id: bookId });
-        if (existingBook) {
-          results.book.existing++;
-          console.log(`📖 Book already exists: "${book.title}"`);
-        } else {
-          // Use insertOne to ensure _id is preserved exactly as provided
-          await Book.collection.insertOne(bookData);
-          results.book.added++;
-          console.log(`✅ Book saved: "${book.title}" (ID: ${bookId})`);
-        }
+        await Book.collection.insertOne(bookData);
+        results.book.added++;
+        console.log(`✅ Book saved: "${book.title}" (ID: ${bookId})`);
       } catch (bookError) {
         if (bookError.code === 11000) {
           results.book.existing++;
@@ -487,7 +574,8 @@ function extractISBN(identifiers, type) {
 function generateValidISBN(seed) {
   const timestamp = Date.now().toString();
   const seedNum = (seed || '').replace(/\D/g, '') || '1';
-  return (seedNum + timestamp).slice(-10).padStart(10, '0');
+  const random = Math.floor(Math.random() * 1000).toString();
+  return (seedNum + timestamp + random).slice(-10).padStart(10, '0');
 }
 
 function cleanText(text, maxLength) {
@@ -538,10 +626,10 @@ function removeDuplicates(books) {
   });
 }
 
-// Main optimized update function
+// Main optimized update function - GUARANTEE 50 NEW BOOKS
 export async function updateTrendingBooks() {
   const startTime = Date.now();
-  console.log('🚀 Starting Enhanced Trending Books Update...\n');
+  console.log('🚀 Starting Enhanced Trending Books Update - TARGET: 50 NEW BOOKS\n');
   
   try {
     // Wait for database connection
@@ -551,43 +639,70 @@ export async function updateTrendingBooks() {
     const cleanupResults = await cleanupExistingObjectIdDocuments();
     console.log(`🧹 Cleanup: ${cleanupResults.trending + cleanupResults.books} old documents removed\n`);
     
-    let allBooks = [];
+    let newBooks = [];
+    let attempt = 1;
+    const maxAttempts = 3;
     
-    // Phase 1: Google Books API (Primary source)
-    console.log('📚 Phase 1: Google Books API');
-    const googleBooks = await fetchGoogleBooksParallel();
-    allBooks.push(...googleBooks);
-    console.log(`✅ Google Books: ${googleBooks.length} books collected`);
-    
-    // Phase 2: Open Library API (Secondary source)
-    if (allBooks.length < DESIRED_COUNT * 0.9) {
+    while (newBooks.length < DESIRED_COUNT && attempt <= maxAttempts) {
+      console.log(`\n🎯 ATTEMPT ${attempt}: Searching for ${DESIRED_COUNT - newBooks.length} more new books...`);
+      
+      let allBooks = [];
+      
+      // Phase 1: Google Books API (Primary source)
+      console.log('📚 Phase 1: Google Books API');
+      const googleBooks = await fetchGoogleBooksParallel(MAX_FETCH_ATTEMPTS);
+      allBooks.push(...googleBooks);
+      console.log(`✅ Google Books: ${googleBooks.length} books collected`);
+      
+      // Phase 2: Open Library API (Secondary source)
       console.log('\n📖 Phase 2: Open Library API');
-      const openLibraryBooks = await fetchOpenLibraryParallel();
+      const openLibraryBooks = await fetchOpenLibraryParallel(MAX_FETCH_ATTEMPTS);
       allBooks.push(...openLibraryBooks);
       console.log(`✅ Open Library: ${openLibraryBooks.length} additional books`);
+      
+      // Remove duplicates and sort
+      allBooks = removeDuplicates(allBooks);
+      allBooks.sort((a, b) => {
+        const ratingDiff = b.average_rating - a.average_rating;
+        if (Math.abs(ratingDiff) > 0.5) return ratingDiff;
+        return b.published_year - a.published_year;
+      });
+      
+      console.log(`📊 Total unique books collected: ${allBooks.length}`);
+      
+      // Filter out existing books
+      const freshBooks = await filterNewBooks(allBooks);
+      newBooks.push(...freshBooks);
+      
+      // Remove duplicates from newBooks array itself
+      newBooks = removeDuplicates(newBooks);
+      
+      console.log(`✅ Attempt ${attempt} result: ${freshBooks.length} new books found (Total: ${newBooks.length}/${DESIRED_COUNT})`);
+      
+      if (newBooks.length >= DESIRED_COUNT) {
+        break;
+      }
+      
+      attempt++;
+      
+      if (attempt <= maxAttempts) {
+        console.log(`⏳ Need ${DESIRED_COUNT - newBooks.length} more books, preparing next attempt...`);
+        await delay(2000); // Brief pause between attempts
+      }
     }
     
-    // Process and finalize
-    allBooks = removeDuplicates(allBooks);
-    
-    // Sort by rating and recency for better quality
-    allBooks.sort((a, b) => {
-      const ratingDiff = b.average_rating - a.average_rating;
-      if (Math.abs(ratingDiff) > 0.5) return ratingDiff;
-      return b.published_year - a.published_year;
-    });
-    
-    const finalBooks = allBooks.slice(0, DESIRED_COUNT);
+    // Take exactly the desired count
+    const finalBooks = newBooks.slice(0, DESIRED_COUNT);
     
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
     
     console.log(`\n📊 Collection Summary (${processingTime}s):`);
-    console.log(`- Total collected: ${allBooks.length}`);
-    console.log(`- Final selection: ${finalBooks.length}`);
+    console.log(`- Attempts made: ${attempt - 1}`);
+    console.log(`- New books found: ${finalBooks.length}`);
     console.log(`- Target achievement: ${((finalBooks.length / DESIRED_COUNT) * 100).toFixed(1)}%`);
     
     if (finalBooks.length === 0) {
-      throw new Error('No valid books collected');
+      throw new Error('No new books found after all attempts');
     }
     
     // Save to both models
@@ -597,7 +712,7 @@ export async function updateTrendingBooks() {
     
     console.log(`\n🎉 SUCCESS! Update completed in ${totalTime} seconds`);
     console.log(`📚 Final Results:`);
-    console.log(`   - ${finalBooks.length} trending books processed`);
+    console.log(`   - ${finalBooks.length} NEW trending books processed`);
     console.log(`   - ${saveResults.trending.added} new trending books saved`);
     console.log(`   - ${saveResults.book.added} new books added to Book model`);
     console.log(`🖼️ All books have valid CORS-enabled thumbnails`);
@@ -626,9 +741,9 @@ export async function updateTrendingBooks() {
         count: finalBooks.length,
         processingTime: totalTime,
         saveResults: saveResults,
+        attempts: attempt - 1,
         summary: {
-          totalCollected: allBooks.length,
-          finalSelection: finalBooks.length,
+          newBooksFound: finalBooks.length,
           targetAchievement: ((finalBooks.length / DESIRED_COUNT) * 100).toFixed(1) + '%'
         }
       }
