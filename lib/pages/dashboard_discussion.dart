@@ -81,6 +81,28 @@ class _DiscussionPageState extends State<DiscussionPage> {
     }
   }
 
+  Future<void> _deleteForum(String forumId, String token) async {
+    try {
+      final response = await discuss.deleteForum(forumId, token);
+      if (response['status'] == 'success') {
+        setState(() {
+          _forums.removeWhere((f) => f.id == forumId);
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Forum deleted successfully')));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete forum')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
   List<Widget> _buildPaginationButtons() {
     return List<Widget>.generate(_totalPages, (i) {
       final page = i + 1;
@@ -160,33 +182,79 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
                                 return GestureDetector(
                                   onTap: () => context.go('/view/${forum.id}'),
-                                  child: ModernFeedCard(
-                                    reviewData: {
-                                      'id': forum.id! ?? 'Unknown ID',
-                                      'title':
-                                          forum.discussionTitle ?? 'No Title',
-                                      'book': forum.bookTitle ?? 'Unknown Book',
-                                      'author':
-                                          forum.userId ?? 'Unknown Author',
-                                      'cover':
-                                          'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
-                                      'content': content,
-                                      'upvotes': forum.likeCount.toString(),
-                                      'comments': '900',
-                                      'timeAgo':
-                                          forum.createdAt != null
-                                              ? DateTime.now()
-                                                      .difference(
-                                                        DateTime.parse(
-                                                          forum.createdAt!,
+                                  child: Stack(
+                                    children: [
+                                      ModernFeedCard(
+                                        reviewData: {
+                                          'id': forum.id! ?? 'Unknown ID',
+                                          'title':
+                                              forum.discussionTitle ??
+                                              'No Title',
+                                          'book':
+                                              forum.bookTitle ?? 'Unknown Book',
+                                          'author':
+                                              forum.userId ?? 'Unknown Author',
+                                          'cover':
+                                              'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+                                          'content': content,
+                                          'upvotes': forum.likeCount.toString(),
+                                          'comments': 'N/A',
+                                          'timeAgo':
+                                              forum.createdAt != null
+                                                  ? DateTime.now()
+                                                          .difference(
+                                                            DateTime.parse(
+                                                              forum.createdAt!,
+                                                            ),
+                                                          )
+                                                          .inDays
+                                                          .toString() +
+                                                      ' days ago'
+                                                  : 'Unknown time',
+                                          'reason': 'Recommended for you',
+                                        },
+                                      ),
+                                      if (_showUserForums)
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: PopupMenuButton<String>(
+                                            icon: Icon(
+                                              Icons.more_vert,
+                                              color: Colors.black87,
+                                            ),
+                                            onSelected: (value) async {
+                                              if (value == 'delete') {
+                                                final token =
+                                                    Provider.of<UserProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    ).token;
+                                                await _deleteForum(
+                                                  forum.id!,
+                                                  token,
+                                                );
+                                              }
+                                            },
+                                            itemBuilder:
+                                                (context) => [
+                                                  PopupMenuItem(
+                                                    value: 'delete',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.delete,
+                                                          color: Colors.red,
                                                         ),
-                                                      )
-                                                      .inDays
-                                                      .toString() +
-                                                  ' days ago'
-                                              : 'Unknown time',
-                                      'reason': 'Recommended for you',
-                                    },
+                                                        SizedBox(width: 8),
+                                                        Text('Delete'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 );
                               },
