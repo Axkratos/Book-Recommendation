@@ -3,6 +3,7 @@ import 'package:bookrec/components/similarBooks/similarBookSection.dart';
 //import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/services/booksapi.dart';
+import 'package:bookrec/services/discussApi.dart'; // <-- Add this import
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -213,6 +214,7 @@ class _CommentsSectionState extends State<CommentsSection> {
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
+        print('Fetch comments response: ${response.body}');
         print('response: ${response.body}');
         final data = jsonDecode(response.body);
         final reviews = data['data']['reviews'] as List;
@@ -328,6 +330,67 @@ class _CommentsSectionState extends State<CommentsSection> {
     }
   }
 
+  // Add this helper to show the report dialog and call the API
+  Future<void> _reportComment(String commentId) async {
+    final TextEditingController _reasonController = TextEditingController();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token;
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Report Comment'),
+            content: TextField(
+              controller: _reasonController,
+              decoration: const InputDecoration(
+                hintText: 'Enter reason for reporting',
+              ),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed:
+                    () => Navigator.pop(context, _reasonController.text.trim()),
+                child: const Text(
+                  'Report',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (reason != null && reason.isNotEmpty) {
+      try {
+        final response = await Discussapi().report(
+          forumId: commentId, // Use commentId as targetId
+          reporterId: '6846b8f560df1b854262a69c',
+          token: token,
+          content: reason,
+          type: 'review', // Indicate this is a review/report
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reported successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to report: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -375,7 +438,10 @@ class _CommentsSectionState extends State<CommentsSection> {
               final comment = _comments[index];
               return Stack(
                 children: [
-                  _CommentTile(comment: comment),
+                  _CommentTile(
+                    comment: comment,
+                    onReport: () => _reportComment(comment.id), // Pass callback
+                  ),
                   if (comment.reviewed)
                     Positioned(
                       top: 0,
@@ -476,7 +542,8 @@ class _CommentsSectionState extends State<CommentsSection> {
 // Helper widget to display a single comment cleanly
 class _CommentTile extends StatelessWidget {
   final Comment comment;
-  const _CommentTile({required this.comment});
+  final VoidCallback? onReport;
+  const _CommentTile({required this.comment, this.onReport});
 
   @override
   Widget build(BuildContext context) {
@@ -505,6 +572,17 @@ class _CommentTile extends StatelessWidget {
                     '• ${comment.timestamp}',
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                   ),
+                  const Spacer(),
+                  if (onReport != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.flag,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      tooltip: 'Report comment',
+                      onPressed: onReport,
+                    ),
                 ],
               ),
               const SizedBox(height: 6),

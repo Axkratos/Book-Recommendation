@@ -90,6 +90,18 @@ class Discussapi {
     }
   }
 
+  Future<Map<String, dynamic>> deleteForum(String forumId, String token) async {
+    final url = Uri.parse('$baseUrl/api/v1/books/forum/$forumId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    return jsonDecode(response.body);
+  }
+
   Future<String> CreateComment({
     required String isbn,
     required String forumId,
@@ -118,6 +130,30 @@ class Discussapi {
       print('Failed to create comment: ${response.body}');
       return 'failed';
     }
+  }
+
+  Future<Map<String, dynamic>> report({
+    required String forumId,
+    required String reporterId,
+    required String token,
+    required String content,
+    required String type,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/v1/books/report');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        "type": type,
+        "targetId": forumId,
+        "content": content,
+        "createdBy": reporterId,
+      }),
+    );
+    return jsonDecode(response.body);
   }
 }
 

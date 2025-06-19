@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:bookrec/components/VintageButton.dart';
 import 'package:bookrec/components/book_grid.dart';
@@ -131,7 +132,7 @@ class BookCardSection extends StatelessWidget {
         } else if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
+              'Like at least five books to see recommendations',
               style: kBodyTextStyle.copyWith(color: kRedAccent),
             ),
           );
@@ -232,14 +233,14 @@ class _BookGridCardState extends State<BookGridCard> {
                     widget.book.thumbnail,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder:
-                        (ctx, err, st) => Container(
-                          color: Colors.grey.shade200,
-                          child: Icon(
-                            Icons.book_outlined,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
+                    errorBuilder: (ctx, err, st) {
+                      final random = Random();
+                      final randomImage =
+                          sampleBookImages[random.nextInt(
+                            sampleBookImages.length,
+                          )];
+                      return Image.network(randomImage, fit: BoxFit.cover);
+                    },
                   ),
                 ),
               ),
@@ -344,3 +345,11 @@ class _BookGridCardState extends State<BookGridCard> {
     );
   }
 }
+
+final List<String> sampleBookImages = [
+  'https://covers.openlibrary.org/b/id/10523338-L.jpg',
+  'https://covers.openlibrary.org/b/id/11153234-L.jpg',
+  'https://covers.openlibrary.org/b/id/10958354-L.jpg',
+  'https://covers.openlibrary.org/b/id/10498765-L.jpg',
+  // Add more URLs as you like
+];

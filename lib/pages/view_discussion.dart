@@ -4,6 +4,7 @@ import 'package:bookrec/services/discussApi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart'; // To make HTTP requests
@@ -14,6 +15,7 @@ import 'package:provider/provider.dart'; // To make HTTP requests
 
 class Comment {
   final String id;
+  final String userId; // Assuming you need user ID for some operations
   final String authorName;
   final String avatarUrl;
   final String content;
@@ -22,6 +24,7 @@ class Comment {
 
   Comment({
     required this.id,
+    required this.userId, // Assuming user ID is needed for some operations
     required this.authorName,
     required this.avatarUrl,
     required this.content,
@@ -73,9 +76,13 @@ Future<List<Comment>> fetchCommentsForForum(
       final List<dynamic> data = json['data'];
 
       return data.map((item) {
+        print(
+          'Comment item: $item',
+        ); // Debugging line to check each comment item
         final user = item['user'];
         return Comment(
           id: item['_id'],
+          userId: user['_id'], // Assuming user ID is needed
           authorName: user['fullName'] ?? 'Anonymous',
           avatarUrl: 'https://i.pravatar.cc/150', // No avatar in response
           content: item['comment'],
@@ -113,7 +120,7 @@ Future<Map<String, dynamic>> fetchForumDetails(
             'Bearer ${token}', // Replace with actual token if required
       },
     );
-
+    print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
       final data = json['data'];
@@ -124,7 +131,8 @@ Future<Map<String, dynamic>> fetchForumDetails(
         'id': data['_id'],
         'title': data['discussionTitle'],
         'book': data['bookTitle'],
-        'author': 'Anonymous', // You can adjust if user info is needed
+        'author':
+            data['userId']['fullName'], // You can adjust if user info is needed
         'cover': 'https://covers.openlibrary.org/b/isbn/${data["ISBN"]}-M.jpg',
         'content': content,
         'upvotes': data['likeCount'].toString(),
@@ -304,13 +312,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                     backgroundColor: vintageBackground,
                     elevation: 1,
                     shadowColor: vintageDivider,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: vintagePrimaryText,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+
                     title: Text(
                       _forumData?['book'] ?? 'Discussion',
                       style: GoogleFonts.montserrat(
@@ -495,7 +497,9 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                             _comments.add(
                               Comment(
                                 id: DateTime.now().toString(),
-                                authorName: 'Anonymous',
+                                userId:
+                                    '12345', // Mock user ID, replace with actual user ID
+                                authorName: 'You',
                                 avatarUrl: 'https://i.pravatar.cc/150',
                                 content: _commentController.text,
                                 timeAgo: 'just now',
@@ -690,6 +694,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                               setState(() {
                                 _comments[index] = Comment(
                                   id: comment.id,
+                                  userId: comment.userId,
                                   authorName: comment.authorName,
                                   avatarUrl: comment.avatarUrl,
                                   content: updated,
@@ -724,6 +729,70 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                           }
                         }
                         : null,
+                onReport: () async {
+                  final reasonController = TextEditingController();
+                  final reason = await showDialog<String>(
+                    context: context,
+                    builder:
+                        (ctx) => AlertDialog(
+                          title: const Text('Report Comment'),
+                          content: TextField(
+                            controller: reasonController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: 'Why are you reporting this comment?',
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed:
+                                  () => Navigator.of(
+                                    ctx,
+                                  ).pop(reasonController.text),
+                              child: const Text('Report'),
+                            ),
+                          ],
+                        ),
+                  );
+                  if (reason != null && reason.trim().isNotEmpty) {
+                    final providerUser = Provider.of<UserProvider>(
+                      context,
+                      listen: false,
+                    );
+                    try {
+                      await discuss.report(
+                        forumId: comment.id, // comment id as targetId
+                        reporterId: comment.userId, // assuming you have user id
+                        token: providerUser.token,
+                        content: reason,
+                        type: 'comment',
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.orange,
+                          content: Text(
+                            'Comment reported.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.red,
+                          content: Text(
+                            'Failed to report comment.',
+                            style: GoogleFonts.montserrat(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
               );
             },
             separatorBuilder:
@@ -743,11 +812,14 @@ class CommentWidget extends StatelessWidget {
   final Comment comment;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final VoidCallback? onReport; // Add this line
+
   const CommentWidget({
     Key? key,
     required this.comment,
     this.onDelete,
     this.onEdit,
+    this.onReport, // Add this line
   }) : super(key: key);
 
   @override
@@ -802,6 +874,16 @@ class CommentWidget extends StatelessWidget {
                       ),
                       tooltip: 'Delete',
                       onPressed: onDelete,
+                    ),
+                  if (onReport != null)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.flag,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      tooltip: 'Report',
+                      onPressed: onReport,
                     ),
                 ],
               ),

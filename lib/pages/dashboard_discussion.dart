@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http; // Add this import
 
 import 'package:bookrec/modals.dart/forum_modal.dart';
 import 'package:bookrec/provider/authprovider.dart';
@@ -81,6 +82,84 @@ class _DiscussionPageState extends State<DiscussionPage> {
     }
   }
 
+  Future<void> _deleteForum(String forumId, String token) async {
+    try {
+      final response = await discuss.deleteForum(forumId, token);
+      if (response['status'] == 'success') {
+        setState(() {
+          _forums.removeWhere((f) => f.id == forumId);
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Forum deleted successfully')));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete forum')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _reportForum({
+    required String forumId,
+    required String reporterId,
+    required String token,
+  }) async {
+    final TextEditingController _controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Report Forum'),
+            content: TextField(
+              controller: _controller,
+              decoration: InputDecoration(hintText: 'Describe the issue...'),
+              maxLines: 3,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed:
+                    () => Navigator.pop(context, _controller.text.trim()),
+                child: Text('Submit'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        final data = await discuss.report(
+          type: 'forum', // Specify the type of report
+          forumId: forumId,
+          reporterId: reporterId,
+          token: token,
+          content: result,
+        );
+        if (data['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Report submitted. Thank you!')),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to submit report.')));
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
   List<Widget> _buildPaginationButtons() {
     return List<Widget>.generate(_totalPages, (i) {
       final page = i + 1;
@@ -157,36 +236,105 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                 final content = safeDecode(
                                   forum.discussionBody,
                                 );
+                                final userProvider = Provider.of<UserProvider>(
+                                  context,
+                                  listen: false,
+                                );
 
                                 return GestureDetector(
                                   onTap: () => context.go('/view/${forum.id}'),
-                                  child: ModernFeedCard(
-                                    reviewData: {
-                                      'id': forum.id! ?? 'Unknown ID',
-                                      'title':
-                                          forum.discussionTitle ?? 'No Title',
-                                      'book': forum.bookTitle ?? 'Unknown Book',
-                                      'author':
-                                          forum.userId ?? 'Unknown Author',
-                                      'cover':
-                                          'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
-                                      'content': content,
-                                      'upvotes': forum.likeCount.toString(),
-                                      'comments': '900',
-                                      'timeAgo':
-                                          forum.createdAt != null
-                                              ? DateTime.now()
-                                                      .difference(
-                                                        DateTime.parse(
-                                                          forum.createdAt!,
+                                  child: Stack(
+                                    children: [
+                                      ModernFeedCard(
+                                        reviewData: {
+                                          'id': forum.id! ?? 'Unknown ID',
+                                          'title':
+                                              forum.discussionTitle ??
+                                              'No Title',
+                                          'book':
+                                              forum.bookTitle ?? 'Unknown Book',
+                                          'author':
+                                              forum.userId ?? 'Unknown Author',
+                                          'cover':
+                                              'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+                                          'content': content,
+                                          'upvotes': forum.likeCount.toString(),
+                                          'comments': 'N/A',
+                                          'timeAgo':
+                                              forum.createdAt != null
+                                                  ? DateTime.now()
+                                                          .difference(
+                                                            DateTime.parse(
+                                                              forum.createdAt!,
+                                                            ),
+                                                          )
+                                                          .inDays
+                                                          .toString() +
+                                                      ' days ago'
+                                                  : 'Unknown time',
+                                          'reason': 'Recommended for you',
+                                        },
+                                      ),
+                                      Positioned(
+                                        top: 8,
+                                        right: 35, // Move flag to the far right
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.flag,
+                                            color: Colors.redAccent,
+                                          ),
+                                          tooltip: 'Report Forum',
+                                          onPressed: () async {
+                                            await _reportForum(
+                                              forumId: forum.id!,
+                                              reporterId: forum.userId!,
+                                              // Adjust if your user model differs
+                                              token: userProvider.token,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      if (_showUserForums)
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: PopupMenuButton<String>(
+                                            icon: Icon(
+                                              Icons.more_vert,
+                                              color: Colors.black87,
+                                            ),
+                                            onSelected: (value) async {
+                                              if (value == 'delete') {
+                                                final token =
+                                                    Provider.of<UserProvider>(
+                                                      context,
+                                                      listen: false,
+                                                    ).token;
+                                                await _deleteForum(
+                                                  forum.id!,
+                                                  token,
+                                                );
+                                              }
+                                            },
+                                            itemBuilder:
+                                                (context) => [
+                                                  PopupMenuItem(
+                                                    value: 'delete',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.delete,
+                                                          color: Colors.red,
                                                         ),
-                                                      )
-                                                      .inDays
-                                                      .toString() +
-                                                  ' days ago'
-                                              : 'Unknown time',
-                                      'reason': 'Recommended for you',
-                                    },
+                                                        SizedBox(width: 8),
+                                                        Text('Delete'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 );
                               },

@@ -273,12 +273,6 @@ class _ModernFeedCardState extends State<ModernFeedCard>
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: kWarmIconColor),
-            onPressed: () {
-              /* TODO: Implement more options */
-            },
-          ),
         ],
       ),
     );
