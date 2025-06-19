@@ -225,7 +225,7 @@ class BooksInfo {
     } else {
       print('Error fetching books: ${response.statusCode}');
       print('Response body: ${response.body}');
-      throw Exception('Failed to load books');
+      throw Exception('failed to load user books');
     }
   }
 

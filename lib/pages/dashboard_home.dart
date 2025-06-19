@@ -131,7 +131,7 @@ class BookCardSection extends StatelessWidget {
         } else if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Error: ${snapshot.error}',
+              'Like at least five books to see recommendations',
               style: kBodyTextStyle.copyWith(color: kRedAccent),
             ),
           );
