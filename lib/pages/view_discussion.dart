@@ -114,7 +114,7 @@ Future<Map<String, dynamic>> fetchForumDetails(
             'Bearer ${token}', // Replace with actual token if required
       },
     );
-
+    print('Response body: ${response.body}');
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
       final data = json['data'];
@@ -125,7 +125,8 @@ Future<Map<String, dynamic>> fetchForumDetails(
         'id': data['_id'],
         'title': data['discussionTitle'],
         'book': data['bookTitle'],
-        'author': 'Anonymous', // You can adjust if user info is needed
+        'author':
+            data['userId']['fullName'], // You can adjust if user info is needed
         'cover': 'https://covers.openlibrary.org/b/isbn/${data["ISBN"]}-M.jpg',
         'content': content,
         'upvotes': data['likeCount'].toString(),
