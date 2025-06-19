@@ -4,6 +4,7 @@ import 'package:bookrec/services/discussApi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart'; // To make HTTP requests
@@ -304,13 +305,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                     backgroundColor: vintageBackground,
                     elevation: 1,
                     shadowColor: vintageDivider,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: vintagePrimaryText,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+
                     title: Text(
                       _forumData?['book'] ?? 'Discussion',
                       style: GoogleFonts.montserrat(
