@@ -4,6 +4,7 @@ import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/pages/HomePage.dart';
 import 'package:bookrec/pages/book_and_similar.dart';
 import 'package:bookrec/pages/book_search.dart';
+import 'package:bookrec/pages/chatapp.dart';
 import 'package:bookrec/pages/dashboard.dart';
 import 'package:bookrec/pages/dashboard_home.dart';
 import 'package:bookrec/pages/dashboard_shelf.dart';
@@ -49,6 +50,12 @@ final GoRouter _router = GoRouter(
       builder: (context, state) {
         final token = state.pathParameters['token']!;
         return Isloading(token: token);
+      },
+    ),
+    GoRoute(
+      path: '/ebook',
+      builder: (context, state) {
+        return Chatapp();
       },
     ),
     // ShellRoute wraps all dashboard/homepage routes

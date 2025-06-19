@@ -20,6 +20,9 @@ dependencies:
   palette_generator: ^0.3.3+7
   provider: ^6.1.5
   shimmer: ^3.0.0
+  file_picker: ^10.2.0
+  pdfx: ^2.9.2
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:
