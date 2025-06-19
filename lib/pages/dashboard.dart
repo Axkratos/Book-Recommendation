@@ -81,13 +81,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   context.go('/dashboard/trending');
                   break; // Trending
                 case 4:
+                  context.go('/ebook'); // Reader
+                  break;
+                case 5:
                   ProviderUser.logout(); // Logout
                   context.go('/'); // Redirect to sign-in page
                   break;
-                case 5:
-                  html.window.location.href = 'http://localhost:5173';
-                  break; // Trending
-
                 // Trending
               }
             });
@@ -190,16 +189,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     tooltip: 'Trending',
                     index: 3,
                   ), // Changed icon
-
-                  const Spacer(), // Pushes logout to the bottom
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.rightFromBracket,
-                    tooltip: "Logout",
-                    index: 4,
-                  ),
                   _buildMenuItem(
                     icon: FontAwesomeIcons.readme,
                     tooltip: "Reader",
+                    index: 4,
+                  ),
+                  const Spacer(),
+                  // Pushes logout to the bottom
+                  _buildMenuItem(
+                    icon: FontAwesomeIcons.rightFromBracket,
+                    tooltip: "Logout",
                     index: 5,
                   ),
                 ],
