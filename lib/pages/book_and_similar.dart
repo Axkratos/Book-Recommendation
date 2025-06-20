@@ -30,6 +30,16 @@ class _BookAndSimilarState extends State<BookAndSimilar> {
     print('Book ID: ${widget.bookId}');
   }
 
+  @override
+  void didUpdateWidget(covariant BookAndSimilar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bookId != widget.bookId) {
+      setState(() {
+        bookDetails = fetchBookDetails(widget.bookId);
+      });
+    }
+  }
+
   Future<Map<String, dynamic>> fetchBookDetails(String bookId) async {
     final data = await booksInfo.getSingleBook(bookId);
     return data['book'];

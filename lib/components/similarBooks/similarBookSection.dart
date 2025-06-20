@@ -1,17 +1,18 @@
 import 'package:bookrec/components/similarBooks/similarBookItems.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SimilarBooksSection extends StatelessWidget {
   final List<Map<String, dynamic>> similarBooks;
-final bool isSmallScreen;
+  final bool isSmallScreen;
 
-const SimilarBooksSection({
-  super.key,
-  required this.similarBooks,
-  this.isSmallScreen=false,
-});
+  const SimilarBooksSection({
+    super.key,
+    required this.similarBooks,
+    this.isSmallScreen = false,
+  });
 
   @override
   Widget build(BuildContext context) {
