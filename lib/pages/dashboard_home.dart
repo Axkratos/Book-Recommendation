@@ -133,20 +133,24 @@ class _BookCardSectionState extends State<BookCardSection> {
     final providerUser = Provider.of<UserProvider>(context, listen: false);
     final bookProvider = Provider.of<Bookprovider>(context, listen: false);
 
-    if (bookProvider.books.isEmpty) {
-      List<Book> books;
-      if (widget.type == 'item') {
-        books = await BooksInfo().fetchBooks(providerUser.token);
-      } else {
-        books = await BooksInfo().fetchBooksUser(providerUser.token);
+    if (widget.type == 'item') {
+      if (bookProvider.itemBook.isEmpty) {
+        final books = await BooksInfo().fetchBooks(providerUser.token);
+        bookProvider.itemBook = books;
       }
-      bookProvider.books = books;
+    } else {
+      if (bookProvider.books.isEmpty) {
+        final books = await BooksInfo().fetchBooksUser(providerUser.token);
+        bookProvider.books = books;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final bookProvider = Provider.of<Bookprovider>(context);
+    final books =
+        widget.type == 'item' ? bookProvider.itemBook : bookProvider.books;
 
     return FutureBuilder<void>(
       future: _booksFuture,
@@ -162,11 +166,9 @@ class _BookCardSectionState extends State<BookCardSection> {
               style: kBodyTextStyle.copyWith(color: kRedAccent),
             ),
           );
-        } else if (bookProvider.books.isEmpty) {
+        } else if (books.isEmpty) {
           return const Center(child: Text('No books found'));
         }
-
-        final books = bookProvider.books;
 
         return Container(
           padding: const EdgeInsets.all(24),
