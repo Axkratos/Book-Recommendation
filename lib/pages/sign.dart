@@ -18,6 +18,7 @@ class SignInPage extends StatefulWidget {
 
 class _SignInPageState extends State<SignInPage> {
   String errorMessage = '';
+  bool _isLoading = false; // <-- Add this line
 
   final _formKey = GlobalKey<FormState>();
   Authservice _authservice = Authservice();
@@ -137,48 +138,93 @@ class _SignInPageState extends State<SignInPage> {
                         },
                       ),
                       SizedBox(height: screenHeight * 0.02),
-                      VintageButton(
-                        text: 'Sign In',
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            try {
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder:
-                                    (_) => Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                              );
-                              print('Pressed Submit on Sign In');
-                              final response = await _authservice
-                                  .sendLoginRequest(
-                                    _email.text,
-                                    _password.text,
-                                  );
-                              Navigator.pop(context);
-
-                              if (response['status'] == 'success') {
-                                ProviderUser.setToken = response['token'];
-                                context.go('/dashboard/home');
-                              } else if (response['status'] == 'failed') {
-                                print('Login failed: ${response['status']}');
+                      // VintageButton(
+                      //   text: 'Sign In',
+                      //   onPressed: () async {
+                      //     if (_formKey.currentState!.validate()) {
+                      //       try {
+                      //         showDialog(
+                      //           context: context,
+                      //           barrierDismissible: false,
+                      //           builder:
+                      //               (_) => Center(
+                      //                 child: CircularProgressIndicator(),
+                      //               ),
+                      //         );
+                      //         print('Pressed Submit on Sign In');
+                      //         final response = await _authservice
+                      //             .sendLoginRequest(
+                      //               _email.text,
+                      //               _password.text,
+                      //             );
+                      //         Navigator.pop(context);
+                      //
+                      //         if (response['status'] == 'success') {
+                      //           ProviderUser.setToken = response['token'];
+                      //           context.go('/dashboard/home');
+                      //         } else if (response['status'] == 'failed') {
+                      //           print('Login failed: ${response['status']}');
+                      //           setState(() {
+                      //             errorMessage = '${response['message']}';
+                      //           });
+                      //         }
+                      //
+                      //         print(response);
+                      //       } catch (e) {
+                      //         Navigator.pop(context);
+                      //         setState(() {
+                      //           errorMessage =
+                      //               'An error occurred. Please try again.';
+                      //         });
+                      //       }
+                      //     }
+                      //   },
+                      // ),
+                      _isLoading
+                          ? CircularProgressIndicator()
+                          : VintageButton(
+                            text: 'Sign In',
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
                                 setState(() {
-                                  errorMessage = '${response['message']}';
+                                  _isLoading = true;
+                                  errorMessage = '';
                                 });
-                              }
+                                try {
+                                  print('Pressed Submit on Sign In');
+                                  final response = await _authservice
+                                      .sendLoginRequest(
+                                        _email.text,
+                                        _password.text,
+                                      );
+                                  print(response);
 
-                              print(response);
-                            } catch (e) {
-                              Navigator.pop(context);
-                              setState(() {
-                                errorMessage =
-                                    'An error occurred. Please try again.';
-                              });
-                            }
-                          }
-                        },
-                      ),
+                                  if (response['status'] == 'success') {
+                                    ProviderUser.setToken = response['token'];
+                                    context.go('/dashboard/home');
+                                  } else if (response['status'] == 'failed') {
+                                    print(
+                                      'Login failed: ${response['status']}',
+                                    );
+                                    setState(() {
+                                      errorMessage = '${response['message']}';
+                                    });
+                                  }
+
+                                  print(response);
+                                } catch (e) {
+                                  setState(() {
+                                    errorMessage =
+                                        'An error occurred. Please try again.';
+                                  });
+                                } finally {
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+                                }
+                              }
+                            },
+                          ),
                       SizedBox(height: screenHeight * 0.02),
                       Text(
                         errorMessage,

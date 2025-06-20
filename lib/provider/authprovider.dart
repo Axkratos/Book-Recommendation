@@ -1,5 +1,7 @@
+import 'package:bookrec/provider/tokenencrypter.dart';
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
+import 'package:provider/provider.dart';
 
 class UserProvider extends ChangeNotifier {
   String token = '';
@@ -10,22 +12,26 @@ class UserProvider extends ChangeNotifier {
   }
 
   void loadUser() {
-    final savedToken = html.window.localStorage['token'];
-    token = savedToken ?? '';
+    final encryptedToken = html.window.localStorage['token'];
+    token =
+        encryptedToken != null
+            ? TokenEncryptor.decryptToken(encryptedToken)
+            : '';
   }
 
   String get getToken => token;
+
   set setToken(String newToken) {
     token = newToken;
-    html.window.localStorage['token'] = newToken;
+    final encrypted = TokenEncryptor.encryptToken(newToken);
+    html.window.localStorage['token'] = encrypted;
 
     notifyListeners();
   }
 
   void logout() {
     token = '';
-    //email = '';
-    html.window.localStorage.clear(); // or remove specific keys
+    html.window.localStorage.remove('token');
     notifyListeners();
   }
 }
