@@ -306,6 +306,9 @@ class _BookDetails extends StatelessWidget {
     print('Genre: $genre, Pages: $pages, Rating: $rating');
     print('Summary: $summary');
 
+    // Add a ValueNotifier for expand/collapse state
+    final ValueNotifier<bool> expanded = ValueNotifier(false);
+
     return SingleChildScrollView(
       padding:
           isNarrow ? EdgeInsets.zero : const EdgeInsets.fromLTRB(0, 24, 24, 24),
@@ -404,18 +407,66 @@ class _BookDetails extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // SYNOPSIS
+              // SYNOPSIS (Expandable)
               _buildSectionHeader('Synopsis'),
               const SizedBox(height: 8),
-              Text(
-                summary,
-                style: GoogleFonts.lato(
-                  color: textColor.withOpacity(0.85),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-                maxLines: 5, // Keep it concise
-                overflow: TextOverflow.ellipsis,
+              ValueListenableBuilder<bool>(
+                valueListenable: expanded,
+                builder: (context, isExpanded, _) {
+                  return GestureDetector(
+                    onTap: () => expanded.value = !isExpanded,
+                    child: AnimatedCrossFade(
+                      firstChild: Text(
+                        summary,
+                        style: GoogleFonts.lato(
+                          color: textColor.withOpacity(0.85),
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      secondChild: Text(
+                        summary,
+                        style: GoogleFonts.lato(
+                          color: textColor.withOpacity(0.85),
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
+                      ),
+                      crossFadeState:
+                          isExpanded
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
+                    ),
+                  );
+                },
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: expanded,
+                builder: (context, isExpanded, _) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () => expanded.value = !isExpanded,
+                      icon: Icon(
+                        isExpanded ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        isExpanded ? "Show less" : "Read more",
+                        style: GoogleFonts.lato(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ]
             .animate(interval: 100.ms)
