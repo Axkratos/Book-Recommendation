@@ -20,6 +20,7 @@ import 'package:bookrec/pages/verifyEmail.dart';
 import 'package:bookrec/pages/view_discussion.dart';
 import 'package:bookrec/pages/write_review.dart';
 import 'package:bookrec/provider/authprovider.dart';
+import 'package:bookrec/provider/bookprovider.dart';
 import 'package:bookrec/provider/catprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -185,6 +186,7 @@ class MainApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CatProvider()),
+        ChangeNotifierProvider(create: (_) => Bookprovider()),
       ],
       child: MaterialApp.router(
         localizationsDelegates: const [
