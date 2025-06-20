@@ -133,8 +133,6 @@ Widget _signupButton(BuildContext context) {
       child: Center(
         child: Row(
           children: [
-            Icon(Icons.plus_one, size: 16),
-            SizedBox(width: 4),
             Text(
               ProviderUser.getToken == '' ? 'Sign In' : 'Dashboard',
               style: GoogleFonts.literata(
