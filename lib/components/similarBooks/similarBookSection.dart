@@ -54,7 +54,11 @@ class SimilarBooksSection extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 10.0),
                   child: SizedBox(
                     width: 300, // Width of each item in horizontal layout
-                    child: SimilarBookListItem(book: similarBooks[index]),
+                    child: ModernBookListItem(
+                      book: similarBooks[index],
+                      style: ModernStyle.glassmorphism,
+                      animationDelay: Duration(milliseconds: index * 100),
+                    ),
                   ),
                 );
               },
@@ -67,7 +71,10 @@ class SimilarBooksSection extends StatelessWidget {
               //physics: const NeverScrollableScrollPhysics(),
               itemCount: similarBooks.length,
               itemBuilder: (context, index) {
-                return SimilarBookListItem(book: similarBooks[index]);
+                return ModernBookListItem(
+                  book: similarBooks[index],
+                  style: ModernStyle.glassmorphism,
+                );
               },
             ),
           ),
