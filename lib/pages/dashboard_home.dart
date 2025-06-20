@@ -55,22 +55,6 @@ class DashboardHome extends StatelessWidget {
                 vertical: 50.0,
               ),
               children: [
-                SectionHeader(title: 'Recommended For You'),
-                const SizedBox(height: 12),
-                Text(
-                  'Here are some books we think you will love based on your past reads, preferences, and interests.',
-                  style: kBodyTextStyle.copyWith(
-                    fontSize: 18,
-                    color: kPrimaryTextColor.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                BookCardSection(type: 'item'),
-                const SizedBox(height: 50),
-
-                // We will use your *original* AIPromptSection component, lightly styled to fit.
-                AIPromptSection(), // Assuming you have refactored your original AIPromptSection
-
                 const SizedBox(height: 50),
                 SectionHeader(title: 'From The Community'),
                 const SizedBox(height: 12),
@@ -83,6 +67,22 @@ class DashboardHome extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 BookCardSection(type: 'user'),
+                const SizedBox(height: 50),
+
+                // We will use your *original* AIPromptSection component, lightly styled to fit.
+                AIPromptSection(), // Assuming you have refactored your original AIPromptSection
+
+                SectionHeader(title: 'Recommended For You'),
+                const SizedBox(height: 12),
+                Text(
+                  'Here are some books we think you will love based on your past reads, preferences, and interests.',
+                  style: kBodyTextStyle.copyWith(
+                    fontSize: 18,
+                    color: kPrimaryTextColor.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                BookCardSection(type: 'item'),
                 const SizedBox(height: 50),
               ],
             ),
