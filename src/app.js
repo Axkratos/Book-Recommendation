@@ -11,7 +11,7 @@ const app = express();
 // 1) Users endpoints: fairly generous
 const usersLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 200, 
+  max: 2000, 
   standardHeaders: true,
   legacyHeaders: false,
   message: { status: 429, error: "Too many user requests, slow down." },
@@ -29,7 +29,7 @@ const authLimiter = rateLimit({
 // 3) Books endpoints: moderate
 const booksLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 min
-  max: 120, // 120 calls per IP per window
+  max: 1000, // 120 calls per IP per window
   standardHeaders: true,
   legacyHeaders: false,
   message: { status: 429, error: "Too many book requests, please wait." },
