@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async'; // Import for Timer
 import 'dart:math';
 
 import 'package:bookrec/components/VintageButton.dart';
@@ -85,6 +86,12 @@ class DashboardHome extends StatelessWidget {
                 const SizedBox(height: 30),
                 BookCardSection(type: 'item'),
                 const SizedBox(height: 50),
+
+                // =============================================================
+                // ================== NEW EXPLORE SECTION ======================
+                // =============================================================
+                BookExploreSection(),
+                const SizedBox(height: 50),
               ],
             ),
           ),
@@ -111,6 +118,214 @@ class SectionHeader extends StatelessWidget {
     );
   }
 }
+
+// =============================================================
+// ========= NEW WIDGET: BOOK EXPLORE SECTION (Spotify Style) ======
+// =============================================================
+
+// Data model for a genre category
+class GenreCategory {
+  final String name;
+  final List<Color> gradientColors;
+
+  GenreCategory({required this.name, required this.gradientColors});
+}
+
+// Dummy data for genres, add or modify as you wish
+final List<GenreCategory> bookGenres = [
+  GenreCategory(
+    name: 'Fantasy',
+    gradientColors: [Color(0xff6a11cb), Color(0xff2575fc)],
+  ),
+  GenreCategory(
+    name: 'Science Fiction',
+    gradientColors: [Color(0xff00c6ff), Color(0xff0072ff)],
+  ),
+  GenreCategory(
+    name: 'Mystery & Thriller',
+    gradientColors: [Color(0xff304352), Color(0xffd7d2cc)],
+  ),
+  GenreCategory(
+    name: 'Biography',
+    gradientColors: [Color(0xffd38312), Color(0xffa83279)],
+  ),
+  GenreCategory(
+    name: 'Historical Fiction',
+    gradientColors: [Color(0xff434343), Color(0xff000000)],
+  ),
+  GenreCategory(
+    name: 'Romance',
+    gradientColors: [Color(0xffc31432), Color(0xff240b36)],
+  ),
+  GenreCategory(
+    name: 'Horror',
+    gradientColors: [Color(0xffB20a2c), Color(0xff100c08)],
+  ),
+  GenreCategory(
+    name: 'Philosophy',
+    gradientColors: [Color(0xffa8c0ff), Color(0xff3f2b96)],
+  ),
+];
+
+class BookExploreSection extends StatefulWidget {
+  const BookExploreSection({Key? key}) : super(key: key);
+
+  @override
+  State<BookExploreSection> createState() => _BookExploreSectionState();
+}
+
+class _BookExploreSectionState extends State<BookExploreSection> {
+  late List<bool> _isCardVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    _isCardVisible = List.generate(bookGenres.length, (_) => false);
+    _triggerStaggeredAnimation();
+  }
+
+  void _triggerStaggeredAnimation() async {
+    for (int i = 0; i < bookGenres.length; i++) {
+      // Wait for a short duration before showing the next card
+      await Future.delayed(const Duration(milliseconds: 90));
+      if (mounted) {
+        setState(() {
+          _isCardVisible[i] = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(title: 'Explore Genres'),
+        const SizedBox(height: 12),
+        Text(
+          'Browse by your favorite genres and discover new worlds to dive into.',
+          style: kBodyTextStyle.copyWith(
+            fontSize: 18,
+            color: kPrimaryTextColor.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 30),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 280,
+            childAspectRatio: 1.8,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+          ),
+          itemCount: bookGenres.length,
+          itemBuilder: (context, index) {
+            final genre = bookGenres[index];
+            return AnimatedOpacity(
+              duration: const Duration(milliseconds: 500),
+              opacity: _isCardVisible[index] ? 1.0 : 0.0,
+              curve: Curves.easeIn,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 400),
+                offset:
+                    _isCardVisible[index] ? Offset.zero : const Offset(0, 0.4),
+                curve: Curves.easeOut,
+                child: ExploreGenreCard(
+                  genre: genre.name,
+                  gradientColors: genre.gradientColors,
+                  onTap: () {
+                    context.go('/search/${Uri.encodeComponent(genre.name)}');
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class ExploreGenreCard extends StatefulWidget {
+  final String genre;
+  final List<Color> gradientColors;
+  final VoidCallback onTap;
+
+  const ExploreGenreCard({
+    Key? key,
+    required this.genre,
+    required this.gradientColors,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<ExploreGenreCard> createState() => _ExploreGenreCardState();
+}
+
+class _ExploreGenreCardState extends State<ExploreGenreCard> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _isHovering ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: widget.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow:
+                  _isHovering
+                      ? [
+                        BoxShadow(
+                          color: widget.gradientColors[1].withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                      : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+            ),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                widget.genre,
+                style: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  letterSpacing: 0.5,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+// =================== END OF NEW WIDGETS =====================
 
 class BookCardSection extends StatefulWidget {
   const BookCardSection({super.key, required this.type});
