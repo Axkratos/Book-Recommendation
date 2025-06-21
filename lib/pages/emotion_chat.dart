@@ -1,7 +1,9 @@
 // lib/widgets/chat_widget.dart
+import 'dart:convert';
 import 'package:bookrec/theme/color.dart'; // Your color definitions
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class ChatWidget extends StatefulWidget {
   const ChatWidget({Key? key}) : super(key: key);
@@ -11,8 +13,38 @@ class ChatWidget extends StatefulWidget {
 }
 
 class _ChatWidgetState extends State<ChatWidget> {
-  // The state for the chat window is now managed within this widget
   bool _isChatOpen = false;
+  String? _sessionId;
+
+  // Replace with your actual base URL
+  final String baseUrl = 'http://localhost:5000';
+
+  Future<void> _initializeSession() async {
+    final url = Uri.parse('$baseUrl/emotion/api/sessions');
+    try {
+      final response = await http.post(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _sessionId = data['session_id'];
+        });
+        print('Session initialized: $_sessionId');
+      } else {
+        print('Failed to initialize session: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error initializing session: $e');
+    }
+  }
+
+  void _openChat() {
+    setState(() {
+      _isChatOpen = true;
+    });
+    if (_sessionId == null) {
+      _initializeSession();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +58,11 @@ class _ChatWidgetState extends State<ChatWidget> {
         transitionBuilder: (Widget child, Animation<double> animation) {
           return ScaleTransition(child: child, scale: animation);
         },
-        child: _isChatOpen
-            // Using a Key helps AnimatedSwitcher differentiate the widgets
-            ? _buildChatWindow(key: const ValueKey('chatWindow'))
-            : _buildChatBubble(key: const ValueKey('chatBubble')),
+        child:
+            _isChatOpen
+                // Using a Key helps AnimatedSwitcher differentiate the widgets
+                ? _buildChatWindow(key: const ValueKey('chatWindow'))
+                : _buildChatBubble(key: const ValueKey('chatBubble')),
       ),
     );
   }
@@ -38,7 +71,7 @@ class _ChatWidgetState extends State<ChatWidget> {
   Widget _buildChatBubble({Key? key}) {
     return GestureDetector(
       key: key,
-      onTap: () => setState(() => _isChatOpen = true),
+      onTap: _openChat,
       child: Container(
         width: 60,
         height: 60,
@@ -53,7 +86,11 @@ class _ChatWidgetState extends State<ChatWidget> {
             ),
           ],
         ),
-        child: const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 32),
+        child: const Icon(
+          Icons.chat_bubble_outline,
+          color: Colors.white,
+          size: 32,
+        ),
       ),
     );
   }
@@ -79,7 +116,9 @@ class _ChatWidgetState extends State<ChatWidget> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: vintageActiveIconColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)), // Adjusted for border
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ), // Adjusted for border
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -126,16 +165,23 @@ class _ChatWidgetState extends State<ChatWidget> {
                       style: GoogleFonts.ebGaramond(color: vintageDarkBrown),
                       decoration: InputDecoration(
                         hintText: "Type a message...",
-                        hintStyle: GoogleFonts.ebGaramond(color: vintageDarkBrown.withOpacity(0.6)),
+                        hintStyle: GoogleFonts.ebGaramond(
+                          color: vintageDarkBrown.withOpacity(0.6),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: vintageBorderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: vintageActiveIconColor, width: 1.5),
+                          borderSide: BorderSide(
+                            color: vintageActiveIconColor,
+                            width: 1.5,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                        ),
                       ),
                     ),
                   ),
