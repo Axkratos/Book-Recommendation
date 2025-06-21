@@ -6,6 +6,7 @@ import { addBookToShelf,getShelfBooks,removeBookFromShelf,checkBookInShelf } fro
 import { createForum,deleteForum,toggleLikeForum,hasLikedForum,updateForum ,getUserForums} from '../controllers/forumController.js';
 import { createComment,getCommentsByForum,getCommentsByUser,hasUserCommented,updateComment,deleteComment } from '../controllers/commentController.js';
 import { createReport} from '../controllers/adminController.js';
+import { getUserProfile,regenerateUserBio,updateFullName } from '../controllers/userController.js';
 const router = express.Router();
 
 router.use(protect);
@@ -78,6 +79,11 @@ router.get('/review/book/:isbn', getReviewsByBook);
 router.delete('/review/:id', deleteReview);
 //create report
 router.post('/report', createReport);
+
+//user profile
+router.get('/profile', getUserProfile);
+router.post('/profile/regenerate', regenerateUserBio);
+router.patch('/profile/fullname', updateFullName);
 
 
 export default router;
