@@ -10,17 +10,17 @@ import mongoSanitize from "express-mongo-sanitize";
 const app = express();
 // 1) Users endpoints: fairly generous
 const usersLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 200, // 200 calls per IP per window
+  windowMs: 15 * 60 * 1000, 
+  max: 200, 
   standardHeaders: true,
   legacyHeaders: false,
   message: { status: 429, error: "Too many user requests, slow down." },
 });
 
-// 2) Auth endpoints: very strict
+
 const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 30, // only 5 login/signup attempts
+  windowMs: 15 * 60 * 1000, // 1 hour
+  max: 30, 
   standardHeaders: true,
   legacyHeaders: false,
   message: { status: 429, error: "Too many auth attempts, try again later." },

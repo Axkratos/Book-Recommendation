@@ -1,57 +1,57 @@
-// import dotenv from "dotenv";
-// import { app } from "./app.js";
-// import connectDB from './db/index.js'
-
-// dotenv.config({
-//     path: './env'
-// })
-// connectDB().then(
-//     ()=>{
-//         app.on('error',(err)=>{
-//             console.log("Internal Server Error",err);
-//             throw err;
-//         })
-//         app.listen(process.env.PORT || 8000,()=>{
-//             console.log(`Server is Listening at port ${process.env.PORT}`);
-//         })
-//     }
-// ).catch(
-//     (err)=>{
-//         console.log("Mongodb Connection failed : ",err)
-//     }
-// );
 import dotenv from "dotenv";
 import { app } from "./app.js";
-import connectDB from './db/index.js';
-import os from 'os';
+import connectDB from './db/index.js'
 
 dotenv.config({
-  path: './env'
-});
+    path: './env'
+})
+connectDB().then(
+    ()=>{
+        app.on('error',(err)=>{
+            console.log("Internal Server Error",err);
+            throw err;
+        })
+        app.listen(process.env.PORT || 8000,()=>{
+            console.log(`Server is Listening at port ${process.env.PORT}`);
+        })
+    }
+).catch(
+    (err)=>{
+        console.log("Mongodb Connection failed : ",err)
+    }
+);
+// import dotenv from "dotenv";
+// import { app } from "./app.js";
+// import connectDB from './db/index.js';
+// import os from 'os';
 
-connectDB().then(() => {
-  console.log("✅ MongoDB connected");
+// dotenv.config({
+//   path: './env'
+// });
 
-  app.on('error', (err) => {
-    console.error("🔴 Internal Server Error", err);
-    throw err;
-  });
+// connectDB().then(() => {
+//   console.log("✅ MongoDB connected");
 
-  const PORT = process.env.PORT || 8000;
-  const HOST = '0.0.0.0';
+//   app.on('error', (err) => {
+//     console.error("🔴 Internal Server Error", err);
+//     throw err;
+//   });
 
-  app.listen(PORT, HOST, () => {
-    console.log(`✅ Server is listening on ${HOST}:${PORT}`);
+//   const PORT = process.env.PORT || 8000;
+//   const HOST = '0.0.0.0';
 
-    // Log all non-internal IPv4 addresses for LAN access
-    const nets = os.networkInterfaces();
-    Object.values(nets).flat().forEach(iface => {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        console.log(`   • LAN URL → http://${iface.address}:${PORT}`);
-      }
-    });
-  });
+//   app.listen(PORT, HOST, () => {
+//     console.log(`✅ Server is listening on ${HOST}:${PORT}`);
 
-}).catch((err) => {
-  console.error("🔴 MongoDB Connection failed:", err);
-});
+//     // Log all non-internal IPv4 addresses for LAN access
+//     const nets = os.networkInterfaces();
+//     Object.values(nets).flat().forEach(iface => {
+//       if (iface.family === 'IPv4' && !iface.internal) {
+//         console.log(`   • LAN URL → http://${iface.address}:${PORT}`);
+//       }
+//     });
+//   });
+
+// }).catch((err) => {
+//   console.error("🔴 MongoDB Connection failed:", err);
+// });
