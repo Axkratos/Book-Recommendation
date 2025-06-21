@@ -16,8 +16,13 @@ class _ChatWidgetState extends State<ChatWidget> {
   bool _isChatOpen = false;
   String? _sessionId;
 
-  // Replace with your actual base URL
   final String baseUrl = 'http://localhost:5000';
+  final String chatApiBaseUrl = 'http://localhost:5000';
+
+  final TextEditingController _controller = TextEditingController();
+  final List<Map<String, String>> _messages =
+      []; // {'role': 'user'/'bot', 'text': ...}
+  bool _isSending = false;
 
   Future<void> _initializeSession() async {
     final url = Uri.parse('$baseUrl/emotion/api/sessions');
@@ -37,6 +42,48 @@ class _ChatWidgetState extends State<ChatWidget> {
     }
   }
 
+  Future<void> _sendMessage(String message) async {
+    if (_sessionId == null || message.trim().isEmpty) return;
+    setState(() {
+      _messages.add({'role': 'user', 'text': message});
+      _isSending = true;
+    });
+    final url = Uri.parse(
+      '$chatApiBaseUrl/emotion/api/sessions/$_sessionId/chat',
+    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'message': message}),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _messages.add({
+            'role': 'bot',
+            'text': data['response'] ?? 'No response.',
+          });
+        });
+      } else {
+        setState(() {
+          _messages.add({
+            'role': 'bot',
+            'text': 'Error: ${response.statusCode}',
+          });
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add({'role': 'bot', 'text': 'Error sending message.'});
+      });
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
+  }
+
   void _openChat() {
     setState(() {
       _isChatOpen = true;
@@ -47,27 +94,29 @@ class _ChatWidgetState extends State<ChatWidget> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // This widget is positioned at the bottom right of its parent Stack
     return Positioned(
       bottom: 32,
       right: 32,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
-        // A nice transition for opening/closing the chat
         transitionBuilder: (Widget child, Animation<double> animation) {
           return ScaleTransition(child: child, scale: animation);
         },
         child:
             _isChatOpen
-                // Using a Key helps AnimatedSwitcher differentiate the widgets
                 ? _buildChatWindow(key: const ValueKey('chatWindow'))
                 : _buildChatBubble(key: const ValueKey('chatBubble')),
       ),
     );
   }
 
-  /// Builds the small floating bubble that appears when the chat is closed.
   Widget _buildChatBubble({Key? key}) {
     return GestureDetector(
       key: key,
@@ -95,7 +144,6 @@ class _ChatWidgetState extends State<ChatWidget> {
     );
   }
 
-  /// Builds the full chat window that opens when the bubble is tapped.
   Widget _buildChatWindow({Key? key}) {
     return Material(
       key: key,
@@ -111,14 +159,14 @@ class _ChatWidgetState extends State<ChatWidget> {
         ),
         child: Column(
           children: [
-            // Header with a title and close button
+            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: vintageActiveIconColor,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(14),
-                ), // Adjusted for border
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -139,29 +187,74 @@ class _ChatWidgetState extends State<ChatWidget> {
                 ],
               ),
             ),
-            // Chat content placeholder
+            // Chat content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Text(
-                    "How can I help you?",
-                    style: GoogleFonts.ebGaramond(
-                      color: vintageDarkBrown,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
+                child:
+                    _messages.isEmpty
+                        ? Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            "How can I help you?",
+                            style: GoogleFonts.ebGaramond(
+                              color: vintageDarkBrown,
+                              fontSize: 16,
+                            ),
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = _messages[index];
+                            final isUser = msg['role'] == 'user';
+                            return Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              alignment:
+                                  isUser
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isUser
+                                          ? vintageActiveIconColor.withOpacity(
+                                            0.8,
+                                          )
+                                          : vintageCream,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        isUser
+                                            ? vintageActiveIconColor
+                                            : vintageBorderColor,
+                                  ),
+                                ),
+                                child: Text(
+                                  msg['text'] ?? '',
+                                  style: GoogleFonts.ebGaramond(
+                                    color:
+                                        isUser
+                                            ? Colors.white
+                                            : vintageDarkBrown,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
               ),
             ),
-            // Input area for typing messages
+            // Input area
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _controller,
                       style: GoogleFonts.ebGaramond(color: vintageDarkBrown),
                       decoration: InputDecoration(
                         hintText: "Type a message...",
@@ -183,15 +276,27 @@ class _ChatWidgetState extends State<ChatWidget> {
                           horizontal: 12,
                         ),
                       ),
+                      onSubmitted: (value) {
+                        if (!_isSending) {
+                          _sendMessage(value);
+                          _controller.clear();
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: Icon(Icons.send, color: vintageActiveIconColor),
-                    onPressed: () {
-                      // Add send logic here
-                      print("Message sent!");
-                    },
+                    onPressed:
+                        _isSending
+                            ? null
+                            : () {
+                              final text = _controller.text.trim();
+                              if (text.isNotEmpty) {
+                                _sendMessage(text);
+                                _controller.clear();
+                              }
+                            },
                     splashRadius: 24,
                   ),
                 ],
