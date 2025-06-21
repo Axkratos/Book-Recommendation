@@ -165,6 +165,11 @@ class _SignInPageState extends State<SignInPage> {
                                     print(
                                       'Login failed: ${response['status']}',
                                     );
+                                    if (response['verification'] == true) {
+                                      print('Email not verified');
+                                      context.go('/signin/signup/verify');
+                                    }
+
                                     setState(() {
                                       errorMessage = '${response['message']}';
                                     });

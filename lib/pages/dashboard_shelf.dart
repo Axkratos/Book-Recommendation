@@ -279,7 +279,10 @@ class _DashboardShelfState extends State<DashboardShelf> {
                                           _HeaderCell(flex: 1, label: 'Rating'),
                                           if (!isTablet)
                                             _HeaderCell(flex: 1, label: 'Year'),
-                                          _HeaderCell(flex: 2, label: 'Review'),
+                                          _HeaderCell(
+                                            flex: 2,
+                                            label: 'Discuss',
+                                          ),
                                           _HeaderCell(flex: 1, label: 'Remove'),
                                         ],
                                       ),
@@ -489,7 +492,7 @@ class _BookListItem extends StatelessWidget {
                           '/writereview/${book['isbn10']}/${book['title']}',
                         ),
                     icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Write Review'),
+                    label: const Text('Create Forum'),
                     style: TextButton.styleFrom(
                       foregroundColor: ModernTheme.accent,
                     ),
@@ -600,7 +603,7 @@ class _BookListItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Text('Review'),
+                    child: const Text('Create Forum'),
                   ),
                 ),
                 _buildCell(

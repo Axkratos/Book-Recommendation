@@ -289,15 +289,15 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                     if (width >= 1300) {
                       // Large Desktop
                       crossAxisCount = 5;
-                      childAspectRatio = 2;
+                      childAspectRatio = 1.7;
                     } else if (width >= 1000) {
                       // Desktop
-                      crossAxisCount = 5;
-                      childAspectRatio = 1.2;
+                      crossAxisCount = 3;
+                      childAspectRatio = 2;
                     } else if (width >= 700) {
                       // Tablet
                       crossAxisCount = 3;
-                      childAspectRatio = 1.5;
+                      childAspectRatio = 1.3;
                     } else {
                       // Mobile
                       crossAxisCount = 1;
