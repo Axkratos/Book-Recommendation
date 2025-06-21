@@ -65,7 +65,10 @@ final GoRouter _router = GoRouter(
         return Homepage(child: child);
       },
       routes: [
-        GoRoute(path: '/', builder: (context, state) => FeaturedPage()),
+        GoRoute(
+          path: '/',
+          builder: (context, state) => RenaissanceAthenaeumPage(),
+        ),
 
         GoRoute(
           path: '/like',
@@ -210,4 +213,5 @@ class MainApp extends StatelessWidget {
     );
   }
 }
+
 //commenting for vercel deployment
