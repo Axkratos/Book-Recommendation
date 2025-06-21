@@ -9,6 +9,7 @@ import 'package:bookrec/dummy/book.dart';
 import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
 import 'package:bookrec/provider/authprovider.dart';
+import 'package:bookrec/provider/bookprovider.dart';
 import 'package:bookrec/services/booksapi.dart';
 import 'package:bookrec/theme/color.dart';
 import 'package:bookrec/theme/dashboard_title.dart';
@@ -111,19 +112,48 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-class BookCardSection extends StatelessWidget {
+class BookCardSection extends StatefulWidget {
   const BookCardSection({super.key, required this.type});
   final String type;
 
   @override
-  Widget build(BuildContext context) {
-    final providerUser = Provider.of<UserProvider>(context);
+  State<BookCardSection> createState() => _BookCardSectionState();
+}
 
-    return FutureBuilder<List<Book>>(
-      future:
-          type == 'item'
-              ? BooksInfo().fetchBooks(providerUser.token)
-              : BooksInfo().fetchBooksUser(providerUser.token),
+class _BookCardSectionState extends State<BookCardSection> {
+  late Future<void> _booksFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _booksFuture = _fetchBooksIfNeeded();
+  }
+
+  Future<void> _fetchBooksIfNeeded() async {
+    final providerUser = Provider.of<UserProvider>(context, listen: false);
+    final bookProvider = Provider.of<Bookprovider>(context, listen: false);
+
+    if (widget.type == 'item') {
+      if (bookProvider.itemBook.isEmpty) {
+        final books = await BooksInfo().fetchBooks(providerUser.token);
+        bookProvider.itemBook = books;
+      }
+    } else {
+      if (bookProvider.books.isEmpty) {
+        final books = await BooksInfo().fetchBooksUser(providerUser.token);
+        bookProvider.books = books;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bookProvider = Provider.of<Bookprovider>(context);
+    final books =
+        widget.type == 'item' ? bookProvider.itemBook : bookProvider.books;
+
+    return FutureBuilder<void>(
+      future: _booksFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -136,13 +166,10 @@ class BookCardSection extends StatelessWidget {
               style: kBodyTextStyle.copyWith(color: kRedAccent),
             ),
           );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        } else if (books.isEmpty) {
           return const Center(child: Text('No books found'));
         }
 
-        final books = snapshot.data!;
-
-        // This container gives the grid section a modern, lifted look.
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -157,12 +184,11 @@ class BookCardSection extends StatelessWidget {
             ],
           ),
           child: GridView.builder(
-            // Important properties for a GridView inside a ListView
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4, // Keep your original layout
-              childAspectRatio: 0.8, // Adjust aspect ratio for your card design
+              crossAxisCount: 4,
+              childAspectRatio: 0.8,
               mainAxisSpacing: 20,
               crossAxisSpacing: 20,
             ),
@@ -170,9 +196,6 @@ class BookCardSection extends StatelessWidget {
             itemBuilder: (context, index) {
               final book = books[index];
               final rank = index + 1;
-
-              // Using your UNCHANGED BookGridCard widget here.
-              // It will automatically pick up the new theme variables.
               return BookGridCard(book: book, rank: rank);
             },
           ),
