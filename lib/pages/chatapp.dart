@@ -62,11 +62,13 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
         headers: {'Content-Type': 'application/json'},
       );
       final data = jsonDecode(response.body);
+      if (!mounted) return; // <-- Add this line
       setState(() {
         _sessionId = data['session_id'];
       });
       _connectWebSocket(data['session_id']);
     } catch (e) {
+      if (!mounted) return; // <-- Add this line
       setState(() {
         _messages.add({
           'role': 'system',
