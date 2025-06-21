@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:bookrec/services/booksapi.dart';
 
 import 'package:bookrec/modals.dart/book_modal.dart';
 import 'package:bookrec/provider/authprovider.dart';
@@ -11,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart'; // To make HTTP requests
+import 'package:bookrec/components/star.dart'; // Add this import
 
 const funkyTeal = Color(0xFF4DB6AC);
 
@@ -167,13 +169,24 @@ class BookGridCard extends StatelessWidget {
   final Book book;
   final int rank;
 
-  const BookGridCard({Key? key, required this.book, required this.rank})
+  BookGridCard({Key? key, required this.book, required this.rank})
     : super(key: key);
+
+  // Add this function to fetch ratings count
+  BooksInfo bookInfo = BooksInfo();
 
   @override
   Widget build(BuildContext context) {
     const primaryTextColor = Color(0xFF4A403A);
     const secondaryTextColor = Color(0xFF7B6F66);
+
+    // Get token from Provider
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final token = userProvider.token;
+    Future<String> rate(String bookID, int value) async {
+      final String response = await bookInfo.bookRatings(bookID, value, token);
+      return response;
+    }
 
     return GestureDetector(
       onTap: () {
@@ -249,6 +262,33 @@ class BookGridCard extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
+                    // --- Add StarRating widget here ---
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, bottom: 4.0),
+                      child: StarRating(
+                        token: token,
+                        bookId: book.id!,
+                        getRatingsCount: bookInfo.getRatingsCount,
+                        size: 16,
+                        color: Colors.amber,
+                        onRatingChanged: (value) async {
+                          final String r = await rate(book.id!, value);
+                          print('Rating response: $r');
+                          if (r == 'sucess') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Rating submitted!'),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $r')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    // --- End StarRating widget ---
                     const Spacer(),
                     Wrap(
                       spacing: 12.0,
