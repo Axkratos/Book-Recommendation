@@ -106,3 +106,16 @@ class WSErrorMessage(BaseModel):
     type: str = Field("error", description="Message type")
     message: str = Field(..., description="Error message")
     code: Optional[int] = Field(None, description="Error code")
+
+class EmotionProfile(BaseModel):
+    emotions: Dict[str, float]
+    dominant_emotion: str
+class BookRecommendation(BaseModel):
+    isbn13: str
+    title: str
+    authors: str
+    description: str
+    thumbnail: Optional[str] = None
+    categories: Optional[str] = None
+    published_year: Optional[int] = None
+    similarity_score: float
