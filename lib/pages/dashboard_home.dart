@@ -92,6 +92,12 @@ class DashboardHome extends StatelessWidget {
                 // =============================================================
                 BookExploreSection(),
                 const SizedBox(height: 50),
+
+                // =============================================================
+                // ================== NEW AUTHORS SECTION ======================
+                // =============================================================
+                ExploreAuthorsSection(),
+                const SizedBox(height: 50),
               ],
             ),
           ),
@@ -119,19 +125,18 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-// =============================================================
-// ========= NEW WIDGET: BOOK EXPLORE SECTION (Spotify Style) ======
-// =============================================================
+// =================================================================
+// ========= Data Models & Widgets for Explore Sections ============
+// =================================================================
 
-// Data model for a genre category
+// -------- Genre Explore Section --------
+
 class GenreCategory {
   final String name;
   final List<Color> gradientColors;
-
   GenreCategory({required this.name, required this.gradientColors});
 }
 
-// Dummy data for genres, add or modify as you wish
 final List<GenreCategory> bookGenres = [
   GenreCategory(
     name: 'Fantasy',
@@ -169,14 +174,12 @@ final List<GenreCategory> bookGenres = [
 
 class BookExploreSection extends StatefulWidget {
   const BookExploreSection({Key? key}) : super(key: key);
-
   @override
   State<BookExploreSection> createState() => _BookExploreSectionState();
 }
 
 class _BookExploreSectionState extends State<BookExploreSection> {
   late List<bool> _isCardVisible;
-
   @override
   void initState() {
     super.initState();
@@ -186,13 +189,8 @@ class _BookExploreSectionState extends State<BookExploreSection> {
 
   void _triggerStaggeredAnimation() async {
     for (int i = 0; i < bookGenres.length; i++) {
-      // Wait for a short duration before showing the next card
       await Future.delayed(const Duration(milliseconds: 90));
-      if (mounted) {
-        setState(() {
-          _isCardVisible[i] = true;
-        });
-      }
+      if (mounted) setState(() => _isCardVisible[i] = true);
     }
   }
 
@@ -252,21 +250,18 @@ class ExploreGenreCard extends StatefulWidget {
   final String genre;
   final List<Color> gradientColors;
   final VoidCallback onTap;
-
   const ExploreGenreCard({
     Key? key,
     required this.genre,
     required this.gradientColors,
     required this.onTap,
   }) : super(key: key);
-
   @override
   State<ExploreGenreCard> createState() => _ExploreGenreCardState();
 }
 
 class _ExploreGenreCardState extends State<ExploreGenreCard> {
   bool _isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -315,8 +310,6 @@ class _ExploreGenreCardState extends State<ExploreGenreCard> {
                   fontSize: 22,
                   letterSpacing: 0.5,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -325,7 +318,431 @@ class _ExploreGenreCardState extends State<ExploreGenreCard> {
     );
   }
 }
-// =================== END OF NEW WIDGETS =====================
+
+// -------- Author Explore Section --------
+
+class Author {
+  final String name;
+  final String portraitUrl;
+  final String tagline;
+  final List<String> knownFor;
+  final List<String> backgroundCoverUrls;
+  Author({
+    required this.name,
+    required this.portraitUrl,
+    required this.tagline,
+    required this.knownFor,
+    required this.backgroundCoverUrls,
+  });
+}
+
+final List<Author> sampleAuthors = [
+  Author(
+    name: 'J.R.R. Tolkien',
+    tagline: 'Father of Modern Fantasy',
+    portraitUrl:
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaZOhEQxOJbiDFktRVYAY10KUFqgoK36YdYA&s',
+    knownFor: ['The Hobbit', 'The Lord of the Rings', 'The Silmarillion'],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/12810557-L.jpg',
+      'https://covers.openlibrary.org/b/id/10523338-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Stephen King',
+    tagline: 'The King of Horror',
+    portraitUrl:
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7fPAygwjZNL3-rt0VdIffNrUljbdD7EqZG-lk66WL6wVE6MToHUTH_hg&s',
+    knownFor: ['The Shining', 'It', 'The Stand'],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/12693824-L.jpg',
+      'https://covers.openlibrary.org/b/id/12711397-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Jane Austen',
+    tagline: 'A Pioneer of the Novel',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/1/1b/Jane_Austen.jpg',
+    knownFor: ['Pride and Prejudice', 'Sense and Sensibility', 'Emma'],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/11181829-L.jpg',
+      'https://covers.openlibrary.org/b/id/8440316-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Haruki Murakami',
+    tagline: 'Master of Magical Realism',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/6/6c/Photo_signed_by_Haruki_Murakami.jpg',
+    knownFor: ['Norwegian Wood', 'Kafka on the Shore', '1Q84'],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/10041267-L.jpg',
+      'https://covers.openlibrary.org/b/id/10298642-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Agatha Christie',
+    tagline: 'Queen of Mystery',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/1/1f/Agatha_Christie.png',
+    knownFor: [
+      'Murder on the Orient Express',
+      'And Then There Were None',
+      'The Murder of Roger Ackroyd',
+    ],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/8231856-L.jpg',
+      'https://covers.openlibrary.org/b/id/10523338-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'George Orwell',
+    tagline: 'Visionary of Dystopia',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/9/9e/George_Orwell_press_photo.jpg',
+    knownFor: ['1984', 'Animal Farm', 'Homage to Catalonia'],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/11153234-L.jpg',
+      'https://covers.openlibrary.org/b/id/10958354-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Maya Angelou',
+    tagline: 'Voice of Resilience',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/b/b4/Angelou_at_Clinton_inauguration.jpg',
+    knownFor: [
+      'I Know Why the Caged Bird Sings',
+      'Gather Together in My Name',
+      'And Still I Rise',
+    ],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/10498765-L.jpg',
+      'https://covers.openlibrary.org/b/id/10523338-L.jpg',
+    ],
+  ),
+  Author(
+    name: 'Gabriel García Márquez',
+    tagline: 'Master of Magical Realism',
+    portraitUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/1/1e/Gabriel_Garcia_Marquez.jpg',
+    knownFor: [
+      'One Hundred Years of Solitude',
+      'Love in the Time of Cholera',
+      'Chronicle of a Death Foretold',
+    ],
+    backgroundCoverUrls: [
+      'https://covers.openlibrary.org/b/id/11181829-L.jpg',
+      'https://covers.openlibrary.org/b/id/10041267-L.jpg',
+    ],
+  ),
+];
+
+class ExploreAuthorsSection extends StatefulWidget {
+  const ExploreAuthorsSection({Key? key}) : super(key: key);
+
+  @override
+  State<ExploreAuthorsSection> createState() => _ExploreAuthorsSectionState();
+}
+
+class _ExploreAuthorsSectionState extends State<ExploreAuthorsSection> {
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      (_scrollController.offset - 300).clamp(
+        0,
+        _scrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      (_scrollController.offset + 300).clamp(
+        0,
+        _scrollController.position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(title: 'Author Spotlights'),
+        const SizedBox(height: 12),
+        Text(
+          'Discover the minds behind the masterpieces. Explore collections from legendary authors.',
+          style: kBodyTextStyle.copyWith(
+            fontSize: 18,
+            color: kPrimaryTextColor.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 30),
+        SizedBox(
+          height: 320,
+          child: Stack(
+            children: [
+              ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                itemCount: sampleAuthors.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: EdgeInsets.only(left: index == 0 ? 0 : 20),
+                    child: AuthorCard(author: sampleAuthors[index]),
+                  );
+                },
+              ),
+              // Left button
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      size: 36,
+                      color: kGoldAccent,
+                    ),
+                    onPressed: _scrollLeft,
+                    splashRadius: 24,
+                    tooltip: 'Scroll left',
+                  ),
+                ),
+              ),
+              // Right button
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.chevron_right,
+                      size: 36,
+                      color: kGoldAccent,
+                    ),
+                    onPressed: _scrollRight,
+                    splashRadius: 24,
+                    tooltip: 'Scroll right',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AuthorCard extends StatefulWidget {
+  final Author author;
+  const AuthorCard({Key? key, required this.author}) : super(key: key);
+
+  @override
+  _AuthorCardState createState() => _AuthorCardState();
+}
+
+class _AuthorCardState extends State<AuthorCard> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to search page with author name as prompt
+          context.go('/search/${Uri.encodeComponent(widget.author.name)}');
+        },
+        child: SizedBox(
+          width: 260, // Fixed width for each card
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Layer 1: Tiled background of book covers
+                ..._buildTiledBackground(),
+
+                // Layer 2: Darkening gradient overlay
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.2),
+                        Colors.black.withOpacity(0.9),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: [0.0, 0.7],
+                    ),
+                  ),
+                ),
+
+                // Layer 3: Author info (Portrait, Name, Tagline)
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Spacer(),
+                      Center(
+                        child: AnimatedScale(
+                          scale: _isHovering ? 1.1 : 1.0,
+                          duration: const Duration(milliseconds: 250),
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: kGoldAccent.withOpacity(0.8),
+                                width: 3,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.network(
+                                widget.author.portraitUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.white,
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        widget.author.name,
+                        style: kHeadingStyle.copyWith(
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.author.tagline,
+                        style: kBodyTextStyle.copyWith(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+
+                // Layer 4: Hover reveal of "Known For" books
+                _buildHoverOverlay(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper to build the tiled background
+  List<Widget> _buildTiledBackground() {
+    // Repeat the list to ensure there's enough to fill the background
+    final covers = [
+      ...widget.author.backgroundCoverUrls,
+      ...widget.author.backgroundCoverUrls.reversed,
+    ];
+    return List.generate(
+      4, // Create a 2x2 grid
+      (index) => Positioned(
+        left: (index % 2) * 130.0, // 260 / 2
+        top: (index ~/ 2) * 160.0, // 320 / 2
+        width: 130,
+        height: 160,
+        child: Opacity(
+          opacity: 0.3,
+          child: Image.network(
+            covers[index % covers.length], // loop through covers
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper to build the overlay shown on hover
+  Widget _buildHoverOverlay() {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 250),
+      opacity: _isHovering ? 1.0 : 0.0,
+      child: Container(
+        color: kPrimaryTextColor.withOpacity(0.9),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Known For",
+                style: kBodyTextStyle.copyWith(
+                  color: kGoldAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...widget.author.knownFor
+                  .map(
+                    (title) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(
+                        '“$title”',
+                        style: kBodyTextStyle.copyWith(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================
+// ============ Your Existing Book Sections Below ===============
+// =============================================================
 
 class BookCardSection extends StatefulWidget {
   const BookCardSection({super.key, required this.type});
@@ -551,7 +968,7 @@ class _BookGridCardState extends State<BookGridCard> {
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
-                                    widget.book.ratingsCount.toString(),
+                                    (widget.book.averageRating).toString(),
                                     style: vintageTextStyle.copyWith(
                                       fontSize: 13,
                                       color: Colors.white,
