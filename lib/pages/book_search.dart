@@ -52,6 +52,17 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
     _futureBooks = fetchBooks();
   }
 
+  @override
+  void didUpdateWidget(covariant SearchResultsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.prompt != widget.prompt) {
+      setState(() {
+        _currentPage = 1;
+        _futureBooks = fetchBooks();
+      });
+    }
+  }
+
   Future<List<Book>> fetchBooks() async {
     final providerUser = Provider.of<UserProvider>(context, listen: false);
 
