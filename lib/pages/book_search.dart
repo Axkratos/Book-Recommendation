@@ -100,7 +100,14 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
 
         final Map<String, dynamic> jsonData = json.decode(response.body);
         final List<dynamic> bookList = jsonData['data'];
-        _totalItems = jsonData['pagination']['totalMatches'];
+        final int totalMatches = jsonData['pagination']['totalMatches'];
+
+        // Ensure UI updates when _totalItems changes
+        if (mounted) {
+          setState(() {
+            _totalItems = totalMatches;
+          });
+        }
 
         return bookList.map((item) {
           return Book(
@@ -412,4 +419,3 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
 }
 
 // The BookGridCard widget remains unchanged.
-
