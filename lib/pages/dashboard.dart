@@ -1,4 +1,5 @@
 // dashboard_page.dart
+import 'package:bookrec/pages/emotion_chat.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/theme/color.dart'; // Your color definitions
 import 'package:flutter/material.dart';
@@ -21,7 +22,9 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  int _activeIndex = 0; // To keep track of the active icon
+  int _activeIndex = 0;
+  // --- Step 2: Remove the state variable that is now in ChatWidget ---
+  // bool _isChatOpen = false; // <-- REMOVED
 
   int _getIndexFromRoute(String location) {
     if (location.startsWith('dashboard/home')) return 0;
@@ -87,10 +90,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   ProviderUser.logout(); // Logout
                   context.go('/'); // Redirect to sign-in page
                   break;
-                // Trending
               }
             });
-            // Add navigation or action logic here
             print("$tooltip tapped");
           },
           borderRadius: BorderRadius.circular(8), // For splash effect
@@ -124,103 +125,101 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double screenHeight = MediaQuery.of(context).size.height;
-
-    // Define a fixed width for the sidebar, or a percentage that makes sense
     final double sidebarWidth =
         screenWidth * 0.08 < 100 ? 100 : screenWidth * 0.08;
 
     return Scaffold(
       backgroundColor: vintageCream,
-      body: Row(
+      body: Stack(
         children: [
-          // Vintage Sidebar
-          Container(
-            width: sidebarWidth,
-            height: screenHeight, // Make it full height
-            decoration: BoxDecoration(
-              color: vintageSidebarBg,
-              boxShadow: [
-                BoxShadow(
-                  color: vintageBorderColor.withOpacity(0.5),
-                  spreadRadius: 2,
-                  blurRadius: 8,
-                  offset: const Offset(2, 0), // changes position of shadow
-                ),
-              ],
-              // Optional: Add a subtle border on the right
-              // border: Border(
-              //   right: BorderSide(color: vintageBorderColor.withOpacity(0.7), width: 1),
-              // )
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.05),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start, // Align to top
-                children: [
-                  // Optional: A placeholder for a logo or title
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20.0),
-                    child: FaIcon(
-                      FontAwesomeIcons.bookBookmark, // Example logo
-                      color: vintageCream.withOpacity(0.7),
-                      size: 35,
+          Row(
+            children: [
+              // Vintage Sidebar
+              Container(
+                width: sidebarWidth,
+                height: screenHeight, // Make it full height
+                decoration: BoxDecoration(
+                  color: vintageSidebarBg,
+                  boxShadow: [
+                    BoxShadow(
+                      color: vintageBorderColor.withOpacity(0.5),
+                      spreadRadius: 2,
+                      blurRadius: 8,
+                      offset: const Offset(2, 0), // changes position of shadow
                     ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.05),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start, // Align to top
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 20.0),
+                        child: FaIcon(
+                          FontAwesomeIcons.bookBookmark, // Example logo
+                          color: vintageCream.withOpacity(0.7),
+                          size: 35,
+                        ),
+                      ),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.house,
+                        tooltip: "Home",
+                        index: 0,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.layerGroup,
+                        tooltip: "Shelf",
+                        index: 1,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.users,
+                        tooltip: "Discussions",
+                        index: 2,
+                      ),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.fire,
+                        tooltip: 'Trending',
+                        index: 3,
+                      ),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.readme,
+                        tooltip: "Reader",
+                        index: 4,
+                      ),
+                      const Spacer(),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.rightFromBracket,
+                        tooltip: "Logout",
+                        index: 5,
+                      ),
+                    ],
                   ),
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.house,
-                    tooltip: "Home",
-                    index: 0,
-                  ),
-                  SizedBox(height: screenHeight * 0.015),
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.layerGroup,
-                    tooltip: "Shelf",
-                    index: 1,
-                  ),
-                  // Changed icon
-                  SizedBox(height: screenHeight * 0.015),
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.users,
-                    tooltip: "Discussions",
-                    index: 2,
-                  ),
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.fire,
-                    tooltip: 'Trending',
-                    index: 3,
-                  ), // Changed icon
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.readme,
-                    tooltip: "Reader",
-                    index: 4,
-                  ),
-                  const Spacer(),
-                  // Pushes logout to the bottom
-                  _buildMenuItem(
-                    icon: FontAwesomeIcons.rightFromBracket,
-                    tooltip: "Logout",
-                    index: 5,
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          // Main Content Area
-          Expanded(
-            child: Padding(
-              // Keep original padding for content, or adjust as needed
-              padding: EdgeInsets.symmetric(
-                vertical: screenHeight * 0.02,
-                horizontal:
-                    screenWidth * 0.04, // Reduced slightly due to sidebar
+              // Main Content Area
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: screenHeight * 0.02,
+                    horizontal: screenWidth * 0.04,
+                  ),
+                  child: widget.child,
+                ),
               ),
-              child: widget.child,
-            ),
+            ],
           ),
+          // --- Step 3: Use the new, encapsulated ChatWidget ---
+          const ChatWidget(),
         ],
       ),
     );
   }
+
+  // --- Step 4: Remove the build methods for the chat bubble and window ---
+  // _buildChatBubble() and _buildChatWindow() have been REMOVED
 }
 
 // You can remove the old dashboard_menu class if you adopt the _buildMenuItem helper
