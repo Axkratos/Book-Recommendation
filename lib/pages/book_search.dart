@@ -52,6 +52,17 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
     _futureBooks = fetchBooks();
   }
 
+  @override
+  void didUpdateWidget(covariant SearchResultsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.prompt != widget.prompt) {
+      setState(() {
+        _currentPage = 1;
+        _futureBooks = fetchBooks();
+      });
+    }
+  }
+
   Future<List<Book>> fetchBooks() async {
     final providerUser = Provider.of<UserProvider>(context, listen: false);
 
@@ -100,7 +111,14 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
 
         final Map<String, dynamic> jsonData = json.decode(response.body);
         final List<dynamic> bookList = jsonData['data'];
-        _totalItems = jsonData['pagination']['totalMatches'];
+        final int totalMatches = jsonData['pagination']['totalMatches'];
+
+        // Ensure UI updates when _totalItems changes
+        if (mounted) {
+          setState(() {
+            _totalItems = totalMatches;
+          });
+        }
 
         return bookList.map((item) {
           return Book(
@@ -412,4 +430,3 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
 }
 
 // The BookGridCard widget remains unchanged.
-
