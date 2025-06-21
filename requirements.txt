@@ -17,3 +17,4 @@ langchain_google_genai
 langchain-chroma
 transformers
 pydantic
+google-generativeai
