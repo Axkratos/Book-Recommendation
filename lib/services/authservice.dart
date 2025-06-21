@@ -57,8 +57,10 @@ class Authservice {
       return responseData;
     } else {
       final responseData = jsonDecode(response.body);
+      print('Error from sendLogin: ${response.body}');
       return {
         'status': 'failed',
+        'verification': responseData['requiresVerification'] ?? false,
         'message':
             '${responseData['message'] ?? 'An error occurred. Please try again.'}',
       };
