@@ -6,6 +6,7 @@ import 'dart:ui' as ui; // Explicitly import for ImageFilter
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
@@ -35,6 +36,8 @@ class Chatapp extends StatefulWidget {
 }
 
 class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
+  final String chatUrl = dotenv.env['chatUrl']!;
+
   PdfControllerPinch? _pdfController;
   String? _pdfFilename;
 
@@ -58,15 +61,15 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   Future<void> _initializeSession() async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:5000/api/sessions'),
+        Uri.parse('${chatUrl}/api/sessions'),
         headers: {'Content-Type': 'application/json'},
       );
       final data = jsonDecode(response.body);
       if (!mounted) return; // <-- Add this line
       setState(() {
         _sessionId = data['session_id'];
+        _isConnected = true;
       });
-      _connectWebSocket(data['session_id']);
     } catch (e) {
       if (!mounted) return; // <-- Add this line
       setState(() {
@@ -77,89 +80,6 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
         });
       });
     }
-  }
-
-  void _connectWebSocket(String sessionId) {
-    final ws = html.WebSocket('ws://localhost:5000/ws/$sessionId');
-    ws.onOpen.listen((event) {
-      setState(() {
-        _isConnected = true;
-        _ws = ws;
-      });
-    });
-    ws.onMessage.listen((event) {
-      if (!mounted) return;
-      final data = jsonDecode(event.data);
-      switch (data['type']) {
-        case 'connection':
-          if (!mounted) return;
-          setState(() {
-            _messages.add({
-              'role': 'system',
-              'content': data['message'],
-              'timestamp': DateTime.now().toIso8601String(),
-            });
-          });
-          break;
-        case 'message':
-          if (!mounted) return;
-          setState(() {
-            _messages.add({
-              'role': data['role'],
-              'content': data['content'],
-              'timestamp': data['timestamp'],
-            });
-            _isTyping = false;
-          });
-          break;
-        case 'typing':
-          if (!mounted) return;
-          setState(() {
-            _isTyping = data['status'];
-          });
-          break;
-        case 'upload_status':
-          if (!mounted) return;
-          setState(() {
-            _uploadStatus = data['message'];
-            if (data['status'] == 'success') {
-              _isUploading = false;
-              _pdfFilename =
-                  data['message'].split(' ').length > 2
-                      ? data['message'].split(' ')[2]
-                      : null;
-            } else if (data['status'] == 'error') {
-              _isUploading = false;
-            }
-          });
-          break;
-        case 'error':
-          if (!mounted) return;
-          setState(() {
-            _messages.add({
-              'role': 'system',
-              'content': 'Error: ${data['message']}',
-              'timestamp': DateTime.now().toIso8601String(),
-            });
-            _isTyping = false;
-          });
-          break;
-      }
-      _scrollToBottom();
-    });
-    ws.onClose.listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _isConnected = false;
-        _ws = null;
-      });
-    });
-    ws.onError.listen((event) {
-      if (!mounted) return;
-      setState(() {
-        _isConnected = false;
-      });
-    });
   }
 
   Future<void> _pickPDF() async {
@@ -177,9 +97,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
 
       final fileBytes = result.files.single.bytes!;
       final fileName = result.files.single.name;
-      final uri = Uri.parse(
-        'http://localhost:5000/api/sessions/$_sessionId/upload',
-      );
+      final uri = Uri.parse('${chatUrl}/api/sessions/$_sessionId/upload');
       final request = html.HttpRequest();
       request.open('POST', uri.toString());
       final formData = html.FormData();
@@ -208,20 +126,78 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_chatController.text.trim().isEmpty || !_isConnected) return;
-    final message = {'type': 'chat', 'message': _chatController.text.trim()};
+    final messageText = _chatController.text.trim();
     setState(() {
       _messages.add({
         'role': 'user',
-        'content': _chatController.text.trim(),
+        'content': messageText,
         'timestamp': DateTime.now().toIso8601String(),
       });
       _chatController.clear();
       _isTyping = true;
     });
-    _ws?.send(jsonEncode(message));
     _scrollToBottom();
+
+    if (_sessionId == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('${chatUrl}/api/sessions/$_sessionId/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': messageText}),
+      );
+      print('Chat response: ${response.body}');
+
+      // Fetch updated messages after sending
+      await _fetchMessages();
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'role': 'system',
+          'content': 'Failed to send message: $e',
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+        _isTyping = false;
+      });
+    }
+  }
+
+  Future<void> _fetchMessages() async {
+    if (_sessionId == null) return;
+    try {
+      final response = await http.get(
+        Uri.parse('${chatUrl}/api/sessions/$_sessionId/messages'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (!mounted) return;
+        setState(() {
+          // If data is a list of messages
+          if (data is List) {
+            _messages
+              ..clear()
+              ..addAll(data.cast<Map<String, dynamic>>());
+          } else if (data is Map && data.containsKey('messages')) {
+            // If backend returns { "messages": [...] }
+            _messages
+              ..clear()
+              ..addAll((data['messages'] as List).cast<Map<String, dynamic>>());
+          } else if (data is Map &&
+              data.containsKey('role') &&
+              data.containsKey('content')) {
+            // If backend returns a single message
+            _messages.add(data as Map<String, dynamic>);
+          }
+          _isTyping = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      setState(() {
+        _isTyping = false;
+      });
+    }
   }
   // --- end of logic section ---
 
@@ -238,7 +214,6 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _pdfController?.dispose();
-    _ws?.close();
     _scrollController.dispose();
     _animationController.dispose();
     super.dispose();

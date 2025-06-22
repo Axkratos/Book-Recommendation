@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -35,9 +36,9 @@ class _ChatWidgetState extends State<ChatWidget>
   late Animation<double> _opacityAnimation;
 
   final String baseUrl =
-      'http://localhost:5000'; // Replace with your backend URL
+      dotenv.env['chatUrl']!; // Replace with your backend URL
   final String chatApiBaseUrl =
-      'http://localhost:5000'; // Replace with your backend URL
+      dotenv.env['chatUrl']!; // Replace with your backend URL
 
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
