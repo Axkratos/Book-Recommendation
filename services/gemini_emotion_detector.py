@@ -27,7 +27,7 @@ class GeminiEmotionDetector:
         )
         try:
             response_text = await asyncio.to_thread(lambda: self.model.generate_content(prompt).text)
-            print("Gemini response:", repr(response_text))  # Debugging aid
+            # print("Gemini response:", repr(response_text))  # Debugging aid
             json_match = re.search(r'({[\s\S]*?})', response_text)
             if json_match:
                 emotion_scores = json.loads(json_match.group(1))

@@ -113,7 +113,8 @@ class EmotionChatAgent:
         insights = await self.emotion_detector.get_conversation_insights()
         self.user_preferences = insights
         recommendations = self.book_recommender.get_recommendations(self.emotion_profile, count=5)
-        
+        print("[DEBUG] Insights:", insights)
+        print("[DEBUG] Recommendations count:", len(recommendations))
         # Current date and time in the requested format
         current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -128,19 +129,38 @@ class EmotionChatAgent:
             "recommendations": []
         }
         
+        # for book in recommendations[:5]:
+        #     response_data["recommendations"].append({
+        #         "title": book["title"],
+        #         "author": book["authors"],
+        #         "description": book["description"][:200] + "..." if len(book["description"]) > 200 else book["description"],
+        #         "isbn10": book["isbn10"],
+        #         "category": book["categories"],
+        #         "thumbnail": book["thumbnail"],
+        #         "published_year": book["published_year"],
+        #         "average_rating": book["average_rating"],
+        #         "ratings_count": book["ratings_count"],
+        #         "similarity_score": round(book["similarity_score"], 2)
+        #     })
         for book in recommendations[:5]:
-            response_data["recommendations"].append({
-                "title": book["title"],
-                "author": book["authors"],
-                "description": book["description"][:200] + "..." if len(book["description"]) > 200 else book["description"],
-                "isbn10": book["isbn10"],
-                "category": book["categories"],
-                "thumbnail": book["thumbnail"],
-                "published_year": book["published_year"],
-                "average_rating": book["average_rating"],
-                "ratings_count": book["ratings_count"],
-                "similarity_score": round(book["similarity_score"], 2)
-            })
+            
+            try:
+                response_data["recommendations"].append({
+                    "title": book["title"],
+                    "author": book["author"],
+                    "description": book["description"],
+                    "isbn10": book["isbn10"],
+                    "category": book["category"],
+                    "thumbnail": book["thumbnail"],
+                    "published_year": book["published_year"],
+                    "average_rating": book["average_rating"],
+                    "ratings_count": book["ratings_count"],
+                    "similarity_score": round(float(book.get("similarity_score", 0.0)), 2)
+
+                })
+            except Exception as e:
+                print(f"[ERROR] while adding book to recommendations: {e}")
+
             
         return response_data
 

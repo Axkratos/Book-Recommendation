@@ -68,6 +68,7 @@ class BookRecommender:
                 "thumbnail": book["thumbnail"],
                 "published_year": book["published_year"],
                 "average_rating": book["average_rating"],
-                "ratings_count": book["ratings_count"]
+                "ratings_count": book["ratings_count"],
+                "similarity_score": score 
             })
         return recommendations
