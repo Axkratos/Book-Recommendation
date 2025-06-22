@@ -298,10 +298,14 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                       // Tablet
                       crossAxisCount = 3;
                       childAspectRatio = 1.3;
-                    } else {
+                    } else if (width >= 500) {
                       // Mobile
                       crossAxisCount = 1;
                       childAspectRatio = 3.5;
+                    } else {
+                      // Small Mobile
+                      crossAxisCount = 1;
+                      childAspectRatio = 1.1;
                     }
 
                     return GridView.builder(
