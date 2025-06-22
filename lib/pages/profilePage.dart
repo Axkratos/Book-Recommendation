@@ -223,21 +223,24 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 500;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFFDE7),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
           child: Container(
-            margin: const EdgeInsets.all(24.0),
-            padding: const EdgeInsets.all(32.0),
+            margin: EdgeInsets.all(isMobile ? 8.0 : 24.0),
+            padding: EdgeInsets.all(isMobile ? 14.0 : 32.0),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [Colors.amber.shade200, Colors.deepOrange.shade200],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24.0),
+              borderRadius: BorderRadius.circular(isMobile ? 14.0 : 24.0),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -249,11 +252,11 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildProfileAvatar(),
-                const SizedBox(height: 24),
-                _buildUserInfo(),
-                const SizedBox(height: 32),
-                _buildActionButtons(),
+                _buildProfileAvatar(isMobile: isMobile),
+                SizedBox(height: isMobile ? 14 : 24),
+                _buildUserInfo(isMobile: isMobile),
+                SizedBox(height: isMobile ? 18 : 32),
+                _buildActionButtons(isMobile: isMobile),
               ],
             ),
           ),
@@ -262,19 +265,19 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileAvatar() {
-    return const CircleAvatar(
-      radius: 60,
+  Widget _buildProfileAvatar({bool isMobile = false}) {
+    return CircleAvatar(
+      radius: isMobile ? 38 : 60,
       backgroundColor: Colors.white,
       child: Icon(
         Icons.person_outline_rounded,
-        size: 70,
-        color: Color(0xFFEF6C00),
+        size: isMobile ? 44 : 70,
+        color: const Color(0xFFEF6C00),
       ),
     );
   }
 
-  Widget _buildUserInfo() {
+  Widget _buildUserInfo({bool isMobile = false}) {
     return Column(
       children: [
         // User Name
@@ -282,12 +285,12 @@ class _ProfilePageState extends State<ProfilePage> {
           _userName,
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
-            fontSize: 28,
+            fontSize: isMobile ? 20 : 28,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF4E342E),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isMobile ? 8 : 12),
         // Bio Section with Animation
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
@@ -299,13 +302,13 @@ class _ProfilePageState extends State<ProfilePage> {
           },
           child:
               _isBioLoading
-                  ? _buildLoadingIndicator()
+                  ? _buildLoadingIndicator(isMobile: isMobile)
                   : Text(
                     _userBio,
                     key: ValueKey<String>(_userBio),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: isMobile ? 13.5 : 16,
                       color: const Color(0xFF5D4037),
                       height: 1.5,
                     ),
@@ -315,53 +318,87 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return const SizedBox(
-      height: 72,
+  Widget _buildLoadingIndicator({bool isMobile = false}) {
+    return SizedBox(
+      height: isMobile ? 48 : 72,
       child: Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
           strokeWidth: 3,
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton.icon(
-          onPressed: _showUpdateNameDialog,
-          icon: const Icon(Icons.edit_rounded, size: 18),
-          label: const Text('Update Name'),
-          style: _buttonStyle(),
-        ),
-        const SizedBox(width: 16),
-        ElevatedButton.icon(
-          onPressed: () {
-            UserProvider userProvider = Provider.of<UserProvider>(
-              context,
-              listen: false,
-            );
-            _regenerateBio(userProvider.token); // <-- Use regenerate API
-          },
-          icon: const Icon(Icons.refresh_rounded, size: 18),
-          label: const Text('Refresh Bio'),
-          style: _buttonStyle(),
-        ),
-      ],
-    );
+  Widget _buildActionButtons({bool isMobile = false}) {
+    if (isMobile) {
+      return Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: _showUpdateNameDialog,
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Update Name'),
+            style: _buttonStyle(isMobile: true),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            onPressed: () {
+              UserProvider userProvider = Provider.of<UserProvider>(
+                context,
+                listen: false,
+              );
+              _regenerateBio(userProvider.token);
+            },
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Refresh Bio'),
+            style: _buttonStyle(isMobile: true),
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton.icon(
+            onPressed: _showUpdateNameDialog,
+            icon: const Icon(Icons.edit_rounded, size: 18),
+            label: const Text('Update Name'),
+            style: _buttonStyle(),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              UserProvider userProvider = Provider.of<UserProvider>(
+                context,
+                listen: false,
+              );
+              _regenerateBio(userProvider.token);
+            },
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Refresh Bio'),
+            style: _buttonStyle(),
+          ),
+        ],
+      );
+    }
   }
 
-  ButtonStyle _buttonStyle() {
+  ButtonStyle _buttonStyle({bool isMobile = false}) {
     return ElevatedButton.styleFrom(
       backgroundColor: Colors.white.withOpacity(0.8),
       foregroundColor: const Color(0xFFEF6C00),
       elevation: 5,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)),
-      textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 20,
+        vertical: isMobile ? 10 : 12,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isMobile ? 20.0 : 30.0),
+      ),
+      textStyle: GoogleFonts.poppins(
+        fontWeight: FontWeight.w600,
+        fontSize: isMobile ? 14 : null,
+      ),
     );
   }
 }

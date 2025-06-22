@@ -245,25 +245,35 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   // --- NEW & ENHANCED WIDGETS ---
 
   // Build a stylish message bubble
-  Widget _buildMessage(Map<String, dynamic> message) {
+  Widget _buildMessage(Map<String, dynamic> message, {bool isMobile = false}) {
     final bool isUser = message['role'] == 'user';
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.symmetric(
+          vertical: isMobile ? 3 : 6,
+          horizontal: isMobile ? 2 : 4,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 10 : 16,
+          vertical: isMobile ? 8 : 12,
+        ),
         decoration: BoxDecoration(
           color: isUser ? userBubbleColor : botBubbleColor,
-          borderRadius: BorderRadius.circular(20).subtract(
+          borderRadius: BorderRadius.circular(isMobile ? 12 : 20).subtract(
             isUser
-                ? const BorderRadius.only(bottomRight: Radius.circular(16))
-                : const BorderRadius.only(bottomLeft: Radius.circular(16)),
+                ? BorderRadius.only(
+                  bottomRight: Radius.circular(isMobile ? 8 : 16),
+                )
+                : BorderRadius.only(
+                  bottomLeft: Radius.circular(isMobile ? 8 : 16),
+                ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.10),
+              blurRadius: isMobile ? 4 : 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -272,13 +282,13 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
           style:
               isUser
                   ? GoogleFonts.inter(
-                    color: Colors.black, // High contrast for readability
+                    color: Colors.black,
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: isMobile ? 13 : 15,
                   )
                   : GoogleFonts.lora(
                     color: textPrimary,
-                    fontSize: 16,
+                    fontSize: isMobile ? 13.5 : 16,
                     fontWeight: FontWeight.w500,
                   ),
         ),
@@ -288,16 +298,28 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
 
   // A glassmorphic chat overlay that blurs the content behind it
   Widget _buildChatOverlay() {
+    final isMobile = MediaQuery.of(context).size.width < 500;
+    final double overlayWidth =
+        isMobile
+            ? MediaQuery.of(context).size.width - 16
+            : (_isChatExpanded ? 420 : 80);
+    final double overlayHeight =
+        isMobile
+            ? (_isChatExpanded ? MediaQuery.of(context).size.height * 0.85 : 64)
+            : (_isChatExpanded
+                ? MediaQuery.of(context).size.height * 0.75
+                : 80);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 450),
       curve: Curves.easeInOutCubic,
-      width: _isChatExpanded ? 420 : 80,
-      height: _isChatExpanded ? MediaQuery.of(context).size.height * 0.75 : 80,
+      width: overlayWidth,
+      height: overlayHeight,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height - 100,
+        maxHeight: MediaQuery.of(context).size.height - (isMobile ? 40 : 100),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 24),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
           child: AnimatedContainer(
@@ -305,9 +327,9 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
             decoration: BoxDecoration(
               color:
                   _isDarkTheme
-                      ? darkSecondary.withOpacity(0.65)
-                      : lightSecondary.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(24),
+                      ? darkSecondary.withOpacity(0.85)
+                      : lightSecondary.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(isMobile ? 12 : 24),
               border: Border.all(color: textPrimary.withOpacity(0.1)),
             ),
             child: AnimatedSwitcher(
@@ -317,8 +339,8 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
               },
               child:
                   _isChatExpanded
-                      ? _buildExpandedChat()
-                      : _buildCollapsedChat(),
+                      ? _buildExpandedChat(isMobile: isMobile)
+                      : _buildCollapsedChat(isMobile: isMobile),
             ),
           ),
         ),
@@ -327,11 +349,11 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   }
 
   // Collapsed state of the chat bubble icon
-  Widget _buildCollapsedChat() {
+  Widget _buildCollapsedChat({bool isMobile = false}) {
     return InkWell(
       key: const ValueKey('collapsed'),
       onTap: () => _toggleChatPanel(expand: true),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(isMobile ? 12 : 24),
       child: Center(
         child: ShaderMask(
           shaderCallback:
@@ -340,10 +362,10 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
-          child: const Icon(
+          child: Icon(
             Icons.mark_unread_chat_alt_rounded,
-            color: Colors.white, // Color is needed for the shader mask
-            size: 44,
+            color: Colors.white,
+            size: isMobile ? 32 : 44,
           ),
         ),
       ),
@@ -351,21 +373,26 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   }
 
   // Expanded state of the chat panel
-  Widget _buildExpandedChat() {
+  Widget _buildExpandedChat({bool isMobile = false}) {
     return Column(
       key: const ValueKey('expanded'),
       children: [
         InkWell(
           onTap: () => _toggleChatPanel(expand: false),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 12 : 24,
+              isMobile ? 10 : 20,
+              isMobile ? 8 : 16,
+              isMobile ? 8 : 16,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   "Book Buddy",
                   style: GoogleFonts.cinzelDecorative(
-                    fontSize: 22,
+                    fontSize: isMobile ? 16 : 22,
                     color: _isDarkTheme ? textPrimary : lightTextPrimary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -378,7 +405,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
                   child: Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: _isDarkTheme ? textSecondary : Colors.grey.shade600,
-                    size: 32,
+                    size: isMobile ? 24 : 32,
                   ),
                 ),
               ],
@@ -388,55 +415,70 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 16),
             itemCount: _messages.length,
-            itemBuilder: (context, index) => _buildMessage(_messages[index]),
+            itemBuilder:
+                (context, index) =>
+                    _buildMessage(_messages[index], isMobile: isMobile),
           ),
         ),
         if (_isTyping) const TypingIndicator(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-          child: _buildChatInputField(),
+          padding: EdgeInsets.fromLTRB(
+            isMobile ? 8 : 16,
+            8,
+            isMobile ? 8 : 16,
+            isMobile ? 10 : 20,
+          ),
+          child: _buildChatInputField(isMobile: isMobile),
         ),
       ],
     );
   }
 
   // The chat text field and send button
-  Widget _buildChatInputField() {
+  Widget _buildChatInputField({bool isMobile = false}) {
     return Container(
       decoration: BoxDecoration(
         color: (_isDarkTheme ? Colors.black : Colors.white).withOpacity(0.2),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(isMobile ? 18 : 25),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _chatController,
-              style: GoogleFonts.inter(color: textPrimary),
+              style: GoogleFonts.inter(
+                color: textPrimary,
+                fontSize: isMobile ? 13.5 : 15,
+              ),
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 10 : 20,
+                ),
                 hintText: 'Ask your Buddy a question...',
-                hintStyle: GoogleFonts.inter(color: textSecondary),
+                hintStyle: GoogleFonts.inter(
+                  color: textSecondary,
+                  fontSize: isMobile ? 13 : 15,
+                ),
                 border: InputBorder.none,
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(4.0),
+            padding: EdgeInsets.all(isMobile ? 2.0 : 4.0),
             child: IconButton(
               style: IconButton.styleFrom(
                 backgroundColor: accentColor,
                 hoverColor: accentHoverColor,
                 shape: const CircleBorder(),
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(isMobile ? 8 : 12),
               ),
-              icon: const Icon(
+              icon: Icon(
                 Icons.send_rounded,
                 color: Colors.black,
-                size: 22,
+                size: isMobile ? 18 : 22,
               ),
               onPressed: _sendMessage,
             ),
@@ -448,6 +490,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
 
   // Widget for initial upload screen
   Widget _buildInitialUploadView() {
+    final isMobile = MediaQuery.of(context).size.width < 500;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -456,46 +499,56 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
             'Load a Book to Begin Your Journey',
             textAlign: TextAlign.center,
             style: GoogleFonts.cinzel(
-              fontSize: 32,
+              fontSize: isMobile ? 20 : 32,
               fontWeight: FontWeight.w700,
               color: textSecondary,
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: isMobile ? 24 : 40),
           ElevatedButton.icon(
             onPressed: _isUploading ? null : _pickPDF,
             icon:
                 _isUploading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                    ? SizedBox(
+                      width: isMobile ? 16 : 20,
+                      height: isMobile ? 16 : 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: darkPrimary,
                       ),
                     )
-                    : const Icon(Icons.menu_book_rounded, size: 24),
+                    : Icon(Icons.menu_book_rounded, size: isMobile ? 18 : 24),
             label: Text(
               _isUploading ? 'ANALYZING...' : 'LOAD EBOOK',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
+                fontSize: isMobile ? 13.5 : 16,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: accentColor,
               foregroundColor: darkPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 18 : 32,
+                vertical: isMobile ? 12 : 20,
               ),
-              textStyle: const TextStyle(fontSize: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(isMobile ? 10 : 16),
+              ),
+              textStyle: TextStyle(fontSize: isMobile ? 13.5 : 16),
             ),
           ),
           if (_uploadStatus.isNotEmpty && !_isUploading)
             Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Text(_uploadStatus, style: TextStyle(color: errorColor)),
+              padding: EdgeInsets.only(top: isMobile ? 12 : 24),
+              child: Text(
+                _uploadStatus,
+                style: TextStyle(
+                  color: errorColor,
+                  fontSize: isMobile ? 12 : 14,
+                ),
+              ),
             ),
         ],
       ),
@@ -504,26 +557,29 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
 
   // Widget to display the PDF with controls
   Widget _buildPdfView() {
+    final isMobile = MediaQuery.of(context).size.width < 500;
     return Column(
       children: [
-        // Upload another button
         Align(
           alignment: Alignment.centerRight,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: EdgeInsets.only(bottom: isMobile ? 8 : 16),
             child: ElevatedButton.icon(
               onPressed: _isUploading ? null : _pickPDF,
-              icon: const Icon(Icons.upload_file_rounded, size: 18),
-              label: const Text('Load Another'),
+              icon: Icon(Icons.upload_file_rounded, size: isMobile ? 14 : 18),
+              label: Text(
+                'Load Another',
+                style: TextStyle(fontSize: isMobile ? 13 : 15),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: darkSecondary,
                 foregroundColor: textPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 10 : 18,
+                  vertical: isMobile ? 8 : 14,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
                 ),
                 textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold),
               ),
@@ -532,26 +588,25 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
         ),
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
             child: Stack(
               children: [
                 Container(
                   decoration: BoxDecoration(
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 30,
-                        spreadRadius: 5,
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: isMobile ? 10 : 30,
+                        spreadRadius: isMobile ? 2 : 5,
                       ),
                     ],
                   ),
                   child: PdfViewPinch(
                     key: ValueKey(_pdfFilename),
                     controller: _pdfController!,
-                    padding: 0, // No default padding around PDF
+                    padding: 0,
                   ),
                 ),
-                // Page number display with glassmorphic effect
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: ValueListenableBuilder<int>(
@@ -559,25 +614,27 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
                     builder: (context, pageNumber, child) {
                       final totalPages = _pdfController!.pagesCount;
                       return ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(isMobile ? 10 : 20),
                         child: BackdropFilter(
                           filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                            margin: EdgeInsets.only(bottom: isMobile ? 10 : 20),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isMobile ? 8 : 16,
+                              vertical: isMobile ? 4 : 8,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(
+                                isMobile ? 10 : 20,
+                              ),
                             ),
                             child: Text(
                               'Page $pageNumber of $totalPages',
                               style: GoogleFonts.inter(
                                 color: textPrimary,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                                fontSize: isMobile ? 11.5 : 14,
                               ),
                             ),
                           ),
@@ -596,6 +653,10 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 500;
+    final horizontalPad = isMobile ? 4.0 : 48.0;
+    final verticalPad = isMobile ? 4.0 : 24.0;
+
     // --- Define professional themes ---
     final ThemeData darkTheme = ThemeData(
       brightness: Brightness.dark,
@@ -656,11 +717,15 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
       data: _isDarkTheme ? darkTheme : lightTheme,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_pdfFilename ?? "eBook Reader AI"),
+          title: Text(
+            _pdfFilename ?? "eBook Reader AI",
+            style: TextStyle(fontSize: isMobile ? 16 : 20),
+          ),
           actions: [
             IconButton(
               icon: Icon(
                 _isDarkTheme ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                size: isMobile ? 20 : 28,
               ),
               tooltip:
                   _isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode',
@@ -670,7 +735,7 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
                 });
               },
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: isMobile ? 2 : 8),
           ],
         ),
         body: Stack(
@@ -678,14 +743,14 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
             // Center PDF content with padding
             Center(
               child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 24,
-                  bottom: 24,
-                  left: 48,
-                  right: 48,
+                padding: EdgeInsets.only(
+                  top: verticalPad,
+                  bottom: verticalPad,
+                  left: horizontalPad,
+                  right: horizontalPad,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
+                  constraints: BoxConstraints(maxWidth: isMobile ? 600 : 1100),
                   child:
                       _pdfController == null
                           ? _buildInitialUploadView()
@@ -695,7 +760,11 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
             ),
             // Positioned glassmorphic chat panel
             if (_pdfFilename != null && !_isUploading)
-              Positioned(bottom: 24, right: 24, child: _buildChatOverlay()),
+              Positioned(
+                bottom: isMobile ? 8 : 24,
+                right: isMobile ? 8 : 24,
+                child: _buildChatOverlay(),
+              ),
           ],
         ),
       ),

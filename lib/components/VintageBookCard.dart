@@ -281,6 +281,22 @@ class _BookDetails extends StatelessWidget {
     final ProviderUser = Provider.of<UserProvider>(context);
     final BooksInfo bookInfo = BooksInfo();
 
+    // Responsive: check if mobile
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 500;
+
+    // Responsive font and padding
+    final double titleFont = isMobile ? 22 : 32;
+    final double authorFont = isMobile ? 14 : 18;
+    final double summaryFont = isMobile ? 13 : 16;
+    final double chipFont = isMobile ? 12 : 15;
+    final double chipPadding = isMobile ? 7 : 10;
+    final double chipIcon = isMobile ? 15 : 18;
+    final double starSize = isMobile ? 22 : 32;
+    final double sectionHeaderFont = isMobile ? 16 : 22;
+    final double detailsPadding = isMobile ? 12 : 24;
+    final double spacing = isMobile ? 10 : 24;
+
     Future<String> rate(String bookID, int value) async {
       final String response = await bookInfo.bookRatings(
         bookID,
@@ -290,10 +306,8 @@ class _BookDetails extends StatelessWidget {
       return response;
     }
 
-    // Text styles using modern font and contrast color
     final textColor = Colors.white;
 
-    // Data Extraction (same as original, but good practice to keep it local)
     String title = book['title'] as String? ?? 'Unknown Title';
     String author = book['authors'] as String? ?? 'Unknown Author';
     int? publicationYear = book['published_year'] as int?;
@@ -302,193 +316,205 @@ class _BookDetails extends StatelessWidget {
     double? rating = (book['average_rating'] as num?)?.toDouble();
     int? pages = book['pages'] as int?;
 
-    print('Book Details: $title by $author, Year: $publicationYear');
-    print('Genre: $genre, Pages: $pages, Rating: $rating');
-    print('Summary: $summary');
-
-    // Add a ValueNotifier for expand/collapse state
     final ValueNotifier<bool> expanded = ValueNotifier(false);
 
     return SingleChildScrollView(
       padding:
-          isNarrow ? EdgeInsets.zero : const EdgeInsets.fromLTRB(0, 24, 24, 24),
+          isNarrow
+              ? EdgeInsets.zero
+              : EdgeInsets.fromLTRB(
+                0,
+                detailsPadding,
+                detailsPadding,
+                detailsPadding,
+              ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-              // TITLE
-              Text(
-                    title,
+          // TITLE
+          Text(
+                title,
+                style: GoogleFonts.lato(
+                  color: textColor,
+                  fontSize: titleFont,
+                  fontWeight: FontWeight.w900,
+                  height: 1.2,
+                ),
+              )
+              .animate()
+              .fadeIn(delay: 200.ms, duration: 400.ms)
+              .slideX(begin: -0.2),
+
+          SizedBox(height: isMobile ? 4 : 8),
+
+          // AUTHOR
+          Text(
+            'by $author ${publicationYear != null ? "($publicationYear)" : ""}',
+            style: GoogleFonts.lato(
+              color: textColor.withOpacity(0.8),
+              fontSize: authorFont,
+              fontStyle: FontStyle.italic,
+            ),
+          ).animate().fadeIn(delay: 300.ms, duration: 400.ms).slideX(begin: -0.2),
+
+          SizedBox(height: spacing / 2),
+
+          // ACTIONS (RATING & SHELF)
+          Row(
+            children: [
+              StarRating(
+                token: ProviderUser.token,
+                bookId: book['isbn10'],
+                getRatingsCount: bookInfo.getRatingsCount,
+                size: starSize,
+                color: Colors.amber,
+                onRatingChanged: (value) async {
+                  final String r = await rate(book['isbn10'], value);
+                  print('Rating response: $r');
+                  if (r == 'sucess') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Rating submitted!')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Error: $r')));
+                  }
+                },
+              ),
+              SizedBox(width: isMobile ? 8 : 16),
+              ShelfButtonWidget(
+                bookId: book['isbn10'],
+                token: ProviderUser.token,
+                bookData: book,
+              ),
+            ],
+          ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
+
+          SizedBox(height: spacing),
+
+          // INFO CHIPS
+          Wrap(
+            spacing: isMobile ? 5.0 : 8.0,
+            runSpacing: isMobile ? 5.0 : 8.0,
+            children: [
+              if (genre.isNotEmpty)
+                _buildInfoChip(
+                  'Genre',
+                  genre,
+                  Icons.category_outlined,
+                  chipFont,
+                  chipPadding,
+                  chipIcon,
+                ),
+              if (pages != null)
+                _buildInfoChip(
+                  'Pages',
+                  pages.toString(),
+                  Icons.pages_outlined,
+                  chipFont,
+                  chipPadding,
+                  chipIcon,
+                ),
+              if (rating != null)
+                _buildInfoChip(
+                  'Rating',
+                  '${rating.toStringAsFixed(1)}/5',
+                  Icons.star_border,
+                  chipFont,
+                  chipPadding,
+                  chipIcon,
+                ),
+            ],
+          ).animate(delay: 500.ms).fadeIn(duration: 400.ms).slideY(begin: 0.2),
+
+          SizedBox(height: spacing),
+
+          // SYNOPSIS (Expandable)
+          _buildSectionHeader('Synopsis', sectionHeaderFont),
+          SizedBox(height: isMobile ? 4 : 8),
+          ValueListenableBuilder<bool>(
+            valueListenable: expanded,
+            builder: (context, isExpanded, _) {
+              return GestureDetector(
+                onTap: () => expanded.value = !isExpanded,
+                child: AnimatedCrossFade(
+                  firstChild: Text(
+                    summary,
                     style: GoogleFonts.lato(
-                      color: textColor,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      height: 1.2,
+                      color: textColor.withOpacity(0.85),
+                      fontSize: summaryFont,
+                      height: 1.5,
                     ),
-                  )
-                  .animate()
-                  .fadeIn(delay: 200.ms, duration: 400.ms)
-                  .slideX(begin: -0.2),
-
-              const SizedBox(height: 8),
-
-              // AUTHOR
-              Text(
-                    'by $author ${publicationYear != null ? "($publicationYear)" : ""}',
-                    style: GoogleFonts.lato(
-                      color: textColor.withOpacity(0.8),
-                      fontSize: 18,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(delay: 300.ms, duration: 400.ms)
-                  .slideX(begin: -0.2),
-
-              const SizedBox(height: 20),
-
-              // ACTIONS (RATING & SHELF)
-              Row(
-                children: [
-                  StarRating(
-                    token: ProviderUser.token,
-                    bookId: book['isbn10'],
-                    getRatingsCount: bookInfo.getRatingsCount,
-                    size: 32,
-                    color: Colors.amber,
-                    onRatingChanged: (value) async {
-                      final String r = await rate(book['isbn10'], value);
-                      print('Rating response: $r');
-                      if (r == 'sucess') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Rating submitted!')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Error: $r')));
-                      }
-                    },
+                    maxLines: isMobile ? 5 : 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 16),
-                  ShelfButtonWidget(
-                    bookId: book['isbn10'],
-                    token: ProviderUser.token,
-                    bookData: book,
-                  ), // Make sure this widget has a modern style
-                ],
-              ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
-
-              const SizedBox(height: 24),
-
-              // INFO CHIPS
-              Wrap(
-                    spacing: 8.0,
-                    runSpacing: 8.0,
-                    children: [
-                      if (genre.isNotEmpty)
-                        _buildInfoChip('Genre', genre, Icons.category_outlined),
-                      if (pages != null)
-                        _buildInfoChip(
-                          'Pages',
-                          pages.toString(),
-                          Icons.pages_outlined,
-                        ),
-                      if (rating != null)
-                        _buildInfoChip(
-                          'Rating',
-                          '${rating.toStringAsFixed(1)}/5',
-                          Icons.star_border,
-                        ),
-                    ],
-                  )
-                  .animate(delay: 500.ms)
-                  .fadeIn(duration: 400.ms)
-                  .slideY(begin: 0.2),
-
-              const SizedBox(height: 24),
-
-              // SYNOPSIS (Expandable)
-              _buildSectionHeader('Synopsis'),
-              const SizedBox(height: 8),
-              ValueListenableBuilder<bool>(
-                valueListenable: expanded,
-                builder: (context, isExpanded, _) {
-                  return GestureDetector(
-                    onTap: () => expanded.value = !isExpanded,
-                    child: AnimatedCrossFade(
-                      firstChild: Text(
-                        summary,
-                        style: GoogleFonts.lato(
-                          color: textColor.withOpacity(0.85),
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      secondChild: Text(
-                        summary,
-                        style: GoogleFonts.lato(
-                          color: textColor.withOpacity(0.85),
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                      ),
-                      crossFadeState:
-                          isExpanded
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 300),
+                  secondChild: Text(
+                    summary,
+                    style: GoogleFonts.lato(
+                      color: textColor.withOpacity(0.85),
+                      fontSize: summaryFont,
+                      height: 1.5,
                     ),
-                  );
-                },
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: expanded,
-                builder: (context, isExpanded, _) {
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => expanded.value = !isExpanded,
-                      icon: Icon(
-                        isExpanded ? Icons.expand_less : Icons.expand_more,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        isExpanded ? "Show less" : "Read more",
-                        style: GoogleFonts.lato(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  ),
+                  crossFadeState:
+                      isExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 300),
+                ),
+              );
+            },
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: expanded,
+            builder: (context, isExpanded, _) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  onPressed: () => expanded.value = !isExpanded,
+                  icon: Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    isExpanded ? "Show less" : "Read more",
+                    style: GoogleFonts.lato(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 13 : 15,
                     ),
-                  );
-                },
-              ),
-            ]
-            .animate(interval: 100.ms)
-            .fadeIn(duration: 400.ms)
-            .slideY(begin: 0.1), // Stagger child animations
+                  ),
+                ),
+              );
+            },
+          ),
+        ].animate(interval: 100.ms).fadeIn(duration: 400.ms).slideY(begin: 0.1),
       ),
     );
   }
 
-  // A modern Chip to display info nuggets
-  Widget _buildInfoChip(String label, String value, IconData icon) {
+  // Responsive Chip
+  Widget _buildInfoChip(
+    String label,
+    String value,
+    IconData icon,
+    double chipFont,
+    double chipPadding,
+    double chipIcon,
+  ) {
     return Chip(
       avatar: CircleAvatar(
         backgroundColor: Colors.white.withOpacity(0.85),
-        child: Icon(icon, color: gradientColors.first, size: 18),
+        child: Icon(icon, color: gradientColors.first, size: chipIcon),
       ),
       label: Text(
         '$label: $value',
         style: GoogleFonts.lato(
           color: Colors.white,
           fontWeight: FontWeight.bold,
-          fontSize: 15,
+          fontSize: chipFont,
           letterSpacing: 0.2,
         ),
       ),
@@ -506,17 +532,17 @@ class _BookDetails extends StatelessWidget {
         side: BorderSide(color: Colors.white.withOpacity(0.5), width: 1.2),
       ),
       elevation: 4,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: chipPadding),
     );
   }
 
-  // A modern section header
-  Widget _buildSectionHeader(String title) {
+  // Responsive section header
+  Widget _buildSectionHeader(String title, double fontSize) {
     return Text(
       title,
       style: GoogleFonts.lato(
         color: Colors.white,
-        fontSize: 22,
+        fontSize: fontSize,
         fontWeight: FontWeight.bold,
       ),
     );
