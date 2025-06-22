@@ -67,6 +67,7 @@ class _StarRatingState extends State<StarRating> {
                 onPressed: () => _onTap(index + 1),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
+                visualDensity: VisualDensity.compact, // Add this line
               );
             }),
           );

@@ -255,7 +255,7 @@ class BookGridCard extends StatelessWidget {
       coverHeight = 90;
       titleFont = 15;
       authorFont = 12;
-      starSize = 13;
+      starSize = 1;
       iconSize = 15;
       infoFont = 11;
       cardMargin = 8;
@@ -266,7 +266,7 @@ class BookGridCard extends StatelessWidget {
       coverHeight = 120;
       titleFont = 17;
       authorFont = 14;
-      starSize = 15;
+      starSize = 1;
       iconSize = 17;
       infoFont = 12;
       cardMargin = 14;

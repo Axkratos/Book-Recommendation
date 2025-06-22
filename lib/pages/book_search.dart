@@ -301,7 +301,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                     } else if (width >= 500) {
                       // Mobile
                       crossAxisCount = 1;
-                      childAspectRatio = 3.5;
+                      childAspectRatio = 1.3;
                     } else {
                       // Small Mobile
                       crossAxisCount = 1;
@@ -313,7 +313,7 @@ class _BookSearchResultsPageState extends State<SearchResultsPage> {
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 16.0,
-                        mainAxisSpacing: 16.0,
+                        mainAxisSpacing: 8.0,
                         childAspectRatio: childAspectRatio,
                       ),
                       itemCount: books.length,
