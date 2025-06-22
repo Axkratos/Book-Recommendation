@@ -793,9 +793,29 @@ class _BookCardSectionState extends State<BookCardSection> {
           );
         } else if (snapshot.hasError) {
           return Center(
-            child: Text(
-              'Like at least five books to see recommendations',
-              style: kBodyTextStyle.copyWith(color: kRedAccent),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Rate at least five books to see recommendations',
+                  style: kBodyTextStyle.copyWith(color: kRedAccent),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: kGoldAccent,
+                    textStyle: kBodyTextStyle.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  icon: const Icon(Icons.explore),
+                  label: const Text('Explore Fiction Books'),
+                  onPressed: () {
+                    context.go('/search/fiction');
+                  },
+                ),
+              ],
             ),
           );
         } else if (books.isEmpty) {
