@@ -171,6 +171,7 @@ class _TrendingBooksSectionState extends State<_TrendingBooksSection> {
 
   @override
   Widget build(BuildContext context) {
+    final ProviderUser = Provider.of<UserProvider>(context);
     return Column(
       children: [
         _SectionHeader(title: "Explore Trending Books"),
@@ -199,12 +200,24 @@ class _TrendingBooksSectionState extends State<_TrendingBooksSection> {
                 itemCount: books.length,
                 itemBuilder: (context, index) {
                   final book = books[index];
-                  return _BookCoverCard(
-                    imageUrl:
-                        book['thumbnail'] ??
-                        'https://via.placeholder.com/150x220?text=No+Cover',
-                    title: book['title'] ?? 'Unknown',
-                    rotation: (index % 2 == 0 ? 1 : -1) * (0.01 * (index % 5)),
+                  return GestureDetector(
+                    onTap: () {
+                      if (ProviderUser.getToken == '') {
+                        context.go('/signin');
+                      } else {
+                        context.go(
+                          '/book/${book['isbn10']}/${Uri.encodeComponent(book['title'] ?? 'Unknown')}',
+                        );
+                      }
+                    },
+                    child: _BookCoverCard(
+                      imageUrl:
+                          book['thumbnail'] ??
+                          'https://via.placeholder.com/150x220?text=No+Cover',
+                      title: book['title'] ?? 'Unknown',
+                      rotation:
+                          (index % 2 == 0 ? 1 : -1) * (0.01 * (index % 5)),
+                    ),
                   );
                 },
               );
