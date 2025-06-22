@@ -1,6 +1,10 @@
 import 'dart:math';
+import 'package:bookrec/provider/authprovider.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:bookrec/services/booksapi.dart'; // Add this import
 
@@ -74,6 +78,8 @@ class _BookProjectShowcasePageState extends State<BookProjectShowcasePage> {
 class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final ProviderUser = Provider.of<UserProvider>(context);
+
     return Container(
       height: 600,
       width: double.infinity,
@@ -130,6 +136,17 @@ class _HeroSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
+              _InkButton(
+                text: "Explore the Project",
+                onPressed: () {
+                  if (ProviderUser.getToken == '') {
+                    context.go('/signin');
+                  } else {
+                    context.go('/dashboard/home');
+                  }
+                },
+                isLarge: true,
+              ),
             ],
           ),
         ],
@@ -394,15 +411,18 @@ class _FinalCtaSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _InkButton(
-                  text: "Explore Demo",
-                  onPressed: () {},
-                  isLarge: true,
-                ),
                 const SizedBox(width: 20),
                 _InkButton(
                   text: "View on GitHub",
-                  onPressed: () {},
+                  onPressed: () {
+                    final Uri _url = Uri.parse(
+                      'https://github.com/Axkratos/Book-Recommendation.git',
+                    );
+                    // Use launchUrl from url_launcher to open the link
+                    // Make sure to add url_launcher to your pubspec.yaml and import it
+                    // import 'package:url_launcher/url_launcher.dart';
+                    launchUrl(_url);
+                  },
                   isLarge: true,
                   color: _BookProjectShowcasePageState.coolAccent,
                 ),
