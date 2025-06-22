@@ -29,7 +29,7 @@ class EmotionChatAgent:
         self.state = "init"
 
         self.intro_message = (
-            "Hi Axkratos! I'm your book recommendation assistant. I'll help you find books based on "
+            "Hi! I'm your book recommendation assistant. I'll help you find books based on "
             "your mood and preferences. How are you feeling today?"
         )
         
