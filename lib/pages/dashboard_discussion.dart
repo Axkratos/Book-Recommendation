@@ -183,6 +183,8 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 500;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SelectionArea(
@@ -192,36 +194,63 @@ class _DiscussionPageState extends State<DiscussionPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40.0,
-                vertical: 50.0,
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 8.0 : 40.0,
+                vertical: isMobile ? 16.0 : 50.0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   /// Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SectionHeader(title: 'Discussion / Forum'),
-                      VintageButton(
-                        text: _showUserForums ? 'Global' : 'User',
-                        onPressed: () {
-                          setState(() {
-                            _showUserForums = !_showUserForums;
-                          });
-                          _loadPage(
-                            1,
-                            Provider.of<UserProvider>(
-                              context,
-                              listen: false,
-                            ).token,
-                          ); // Reload forums for the new mode
-                        },
+                  isMobile
+                      ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SectionHeader(title: 'Discussion / Forum'),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: VintageButton(
+                              text: _showUserForums ? 'Global' : 'User',
+                              onPressed: () {
+                                setState(() {
+                                  _showUserForums = !_showUserForums;
+                                });
+                                _loadPage(
+                                  1,
+                                  Provider.of<UserProvider>(
+                                    context,
+                                    listen: false,
+                                  ).token,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      )
+                      : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SectionHeader(title: 'Discussion / Forum'),
+                          VintageButton(
+                            text: _showUserForums ? 'Global' : 'User',
+                            onPressed: () {
+                              setState(() {
+                                _showUserForums = !_showUserForums;
+                              });
+                              _loadPage(
+                                1,
+                                Provider.of<UserProvider>(
+                                  context,
+                                  listen: false,
+                                ).token,
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 24), // Match spacing from dashboard_home
+                  SizedBox(height: isMobile ? 12 : 24),
+
                   /// Forum List
                   Expanded(
                     child:
@@ -230,6 +259,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
                             : _forums.isEmpty
                             ? const Center(child: Text('No discussions found.'))
                             : ListView.builder(
+                              padding: EdgeInsets.zero,
                               itemCount: _forums.length,
                               itemBuilder: (context, index) {
                                 final forum = _forums[index];
@@ -241,100 +271,116 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                   listen: false,
                                 );
 
-                                return GestureDetector(
-                                  onTap: () => context.go('/view/${forum.id}'),
-                                  child: Stack(
-                                    children: [
-                                      ModernFeedCard(
-                                        reviewData: {
-                                          'id': forum.id! ?? 'Unknown ID',
-                                          'title':
-                                              forum.discussionTitle ??
-                                              'No Title',
-                                          'book':
-                                              forum.bookTitle ?? 'Unknown Book',
-                                          'author':
-                                              forum.userId ?? 'Unknown Author',
-                                          'cover':
-                                              'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
-                                          'content': content,
-                                          'upvotes': forum.likeCount.toString(),
-                                          'comments': 'N/A',
-                                          'timeAgo':
-                                              forum.createdAt != null
-                                                  ? DateTime.now()
-                                                          .difference(
-                                                            DateTime.parse(
-                                                              forum.createdAt!,
-                                                            ),
-                                                          )
-                                                          .inDays
-                                                          .toString() +
-                                                      ' days ago'
-                                                  : 'Unknown time',
-                                          'reason': 'Recommended for you',
-                                        },
-                                      ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 35, // Move flag to the far right
-                                        child: IconButton(
-                                          icon: Icon(
-                                            Icons.flag,
-                                            color: Colors.redAccent,
-                                          ),
-                                          tooltip: 'Report Forum',
-                                          onPressed: () async {
-                                            await _reportForum(
-                                              forumId: forum.id!,
-                                              reporterId: forum.userId!,
-                                              // Adjust if your user model differs
-                                              token: userProvider.token,
-                                            );
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: isMobile ? 6 : 12,
+                                    horizontal: isMobile ? 2 : 0,
+                                  ),
+                                  child: GestureDetector(
+                                    onTap:
+                                        () => context.go('/view/${forum.id}'),
+                                    child: Stack(
+                                      children: [
+                                        ModernFeedCard(
+                                          reviewData: {
+                                            'id': forum.id! ?? 'Unknown ID',
+                                            'title':
+                                                forum.discussionTitle ??
+                                                'No Title',
+                                            'book':
+                                                forum.bookTitle ??
+                                                'Unknown Book',
+                                            'author':
+                                                forum.userId ??
+                                                'Unknown Author',
+                                            'cover':
+                                                'https://covers.openlibrary.org/b/isbn/${forum.isbn}-M.jpg',
+                                            'content': content,
+                                            'upvotes':
+                                                forum.likeCount.toString(),
+                                            'comments': 'N/A',
+                                            'timeAgo':
+                                                forum.createdAt != null
+                                                    ? DateTime.now()
+                                                            .difference(
+                                                              DateTime.parse(
+                                                                forum
+                                                                    .createdAt!,
+                                                              ),
+                                                            )
+                                                            .inDays
+                                                            .toString() +
+                                                        ' days ago'
+                                                    : 'Unknown time',
+                                            'reason': 'Recommended for you',
                                           },
                                         ),
-                                      ),
-                                      if (_showUserForums)
                                         Positioned(
-                                          top: 8,
-                                          right: 8,
-                                          child: PopupMenuButton<String>(
+                                          top: isMobile ? 4 : 8,
+                                          right: isMobile ? 28 : 35,
+                                          child: IconButton(
                                             icon: Icon(
-                                              Icons.more_vert,
-                                              color: Colors.black87,
+                                              Icons.flag,
+                                              color: Colors.redAccent,
+                                              size: isMobile ? 20 : 24,
                                             ),
-                                            onSelected: (value) async {
-                                              if (value == 'delete') {
-                                                final token =
-                                                    Provider.of<UserProvider>(
-                                                      context,
-                                                      listen: false,
-                                                    ).token;
-                                                await _deleteForum(
-                                                  forum.id!,
-                                                  token,
-                                                );
-                                              }
+                                            tooltip: 'Report Forum',
+                                            onPressed: () async {
+                                              await _reportForum(
+                                                forumId: forum.id!,
+                                                reporterId: forum.userId!,
+                                                token: userProvider.token,
+                                              );
                                             },
-                                            itemBuilder:
-                                                (context) => [
-                                                  PopupMenuItem(
-                                                    value: 'delete',
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.delete,
-                                                          color: Colors.red,
-                                                        ),
-                                                        SizedBox(width: 8),
-                                                        Text('Delete'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
                                           ),
                                         ),
-                                    ],
+                                        if (_showUserForums)
+                                          Positioned(
+                                            top: isMobile ? 4 : 8,
+                                            right: isMobile ? 4 : 8,
+                                            child: PopupMenuButton<String>(
+                                              icon: Icon(
+                                                Icons.more_vert,
+                                                color: Colors.black87,
+                                                size: isMobile ? 20 : 24,
+                                              ),
+                                              onSelected: (value) async {
+                                                if (value == 'delete') {
+                                                  final token =
+                                                      Provider.of<UserProvider>(
+                                                        context,
+                                                        listen: false,
+                                                      ).token;
+                                                  await _deleteForum(
+                                                    forum.id!,
+                                                    token,
+                                                  );
+                                                }
+                                              },
+                                              itemBuilder:
+                                                  (context) => [
+                                                    PopupMenuItem(
+                                                      value: 'delete',
+                                                      child: Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.delete,
+                                                            color: Colors.red,
+                                                            size:
+                                                                isMobile
+                                                                    ? 18
+                                                                    : 22,
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Text('Delete'),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
@@ -344,10 +390,48 @@ class _DiscussionPageState extends State<DiscussionPage> {
                   /// Pagination
                   if (_totalPages > 1)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: _buildPaginationButtons(),
+                      padding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 6.0 : 12.0,
+                      ),
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: isMobile ? 2 : 6,
+                        children: List<Widget>.generate(_totalPages, (i) {
+                          final page = i + 1;
+                          return SizedBox(
+                            width: isMobile ? 32 : 44,
+                            height: isMobile ? 32 : 40,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed:
+                                  () => _loadPage(
+                                    page,
+                                    Provider.of<UserProvider>(
+                                      context,
+                                      listen: false,
+                                    ).token,
+                                  ),
+                              child: Text(
+                                '$page',
+                                style: TextStyle(
+                                  fontSize: isMobile ? 14 : 16,
+                                  color:
+                                      page == _currentPage
+                                          ? Colors.black
+                                          : Colors.grey,
+                                  fontWeight:
+                                      page == _currentPage
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
                       ),
                     ),
                 ],
