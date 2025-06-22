@@ -31,6 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (location.startsWith('/dashboard/shelf')) return 1;
     if (location.startsWith('/dashboard/discussion')) return 2;
     if (location.startsWith('/dashboard/trending')) return 3;
+    if (location.startsWith('/dashboard/profile')) return 5;
     return 0; // default fallback
   }
 
