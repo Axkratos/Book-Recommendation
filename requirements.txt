@@ -12,4 +12,6 @@ PyPDF2>=3.0.1
 google-generativeai>=0.3.0
 pypdf
 pandas
+nltk
+numpy
 # pip install 'uvicorn[standard]'
