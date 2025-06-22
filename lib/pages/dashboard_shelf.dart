@@ -415,7 +415,7 @@ class _BookListItem extends StatelessWidget {
       elevation: 3,
       shadowColor: Colors.black.withOpacity(0.1),
       child: InkWell(
-        onTap: () => context.go('/book/${book['isbn10']}/${book['title']}'),
+        onTap: () => context.push('/book/${book['isbn10']}/${book['title']}'),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -488,7 +488,7 @@ class _BookListItem extends StatelessWidget {
                 children: [
                   TextButton.icon(
                     onPressed:
-                        () => context.go(
+                        () => context.push(
                           '/writereview/${book['isbn10']}/${book['title']}',
                         ),
                     icon: const Icon(Icons.edit, size: 18),
@@ -522,7 +522,7 @@ class _BookListItem extends StatelessWidget {
       elevation: 4,
       shadowColor: Colors.black.withOpacity(0.05),
       child: InkWell(
-        onTap: () => context.go('/book/${book['isbn10']}/${book['title']}'),
+        onTap: () => context.push('/book/${book['isbn10']}/${book['title']}'),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -592,7 +592,7 @@ class _BookListItem extends StatelessWidget {
                   flex: 2,
                   child: ElevatedButton(
                     onPressed:
-                        () => context.go(
+                        () => context.push(
                           '/writereview/${book['isbn10']}/${book['title']}',
                         ),
                     style: ElevatedButton.styleFrom(

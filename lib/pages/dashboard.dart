@@ -7,11 +7,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'dart:html' as html;
-
-void navigateToReactPage() {
-  html.window.location.href = 'https://example.com/react-page';
-}
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key, required this.child}) : super(key: key);
@@ -73,26 +68,26 @@ class _DashboardPageState extends State<DashboardPage> {
               _activeIndex = index;
               switch (index) {
                 case 0:
-                  context.go('/dashboard/home'); // Home
+                  context.push('/dashboard/home'); // Home
                   break;
                 case 1:
-                  context.go('/dashboard/shelf'); // Shelf
+                  context.push('/dashboard/shelf'); // Shelf
                   break;
                 case 2:
-                  context.go('/dashboard/discussion'); // Discussions
+                  context.push('/dashboard/discussion'); // Discussions
                   break;
                 case 3:
-                  context.go('/dashboard/trending');
+                  context.push('/dashboard/trending');
                   break; // Trending
                 case 4:
-                  context.go('/ebook'); // Reader
+                  context.push('/ebook'); // Reader
                   break;
                 case 5:
-                  context.go('/dashboard/profile'); // Reader
+                  context.push('/dashboard/profile'); // Reader
                   break;
                 case 6:
                   ProviderUser.logout(); // Logout
-                  context.go('/'); // Redirect to sign-in page
+                  context.push('/'); // Redirect to sign-in page
                   break;
               }
             });

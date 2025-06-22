@@ -114,7 +114,7 @@ class _DashboardTrendingState extends State<DashboardTrending> {
                       itemBuilder: (context, index) {
                         return GestureDetector(
                           onTap: () {
-                            context.go(
+                            context.push(
                               '/book/${_books[index].isbn}/${_books[index].title}',
                             );
                           },

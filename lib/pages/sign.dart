@@ -160,14 +160,14 @@ class _SignInPageState extends State<SignInPage> {
 
                                   if (response['status'] == 'success') {
                                     ProviderUser.setToken = response['token'];
-                                    context.go('/dashboard/home');
+                                    context.push('/dashboard/home');
                                   } else if (response['status'] == 'failed') {
                                     print(
                                       'Login failed: ${response['status']}',
                                     );
                                     if (response['verification'] == true) {
                                       print('Email not verified');
-                                      context.go('/signin/signup/verify');
+                                      context.push('/signin/signup/verify');
                                     }
 
                                     setState(() {
@@ -210,7 +210,7 @@ class _SignInPageState extends State<SignInPage> {
                           ),
                           TextButton(
                             onPressed: () {
-                              context.go('/signin/signup');
+                              context.push('/signin/signup');
                             },
                             child: Text(
                               'Sign Up',
@@ -225,7 +225,7 @@ class _SignInPageState extends State<SignInPage> {
                       TextButton(
                         onPressed: () {
                           // Navigates to /signin/forgot-password
-                          context.go('/signin/forgot-password');
+                          context.push('/signin/forgot-password');
                         },
                         child: const Text(
                           'Forgot Password?',

@@ -77,7 +77,7 @@ class _AIPromptSectionState extends State<AIPromptSection>
 
       // Check if the widget is still in the tree before navigating
       if (mounted) {
-        context.go('/dashboard/home/book/$prompt');
+        context.push('/dashboard/home/book/$prompt');
       }
 
       // It's good practice to check `mounted` again before setting state

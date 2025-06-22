@@ -278,7 +278,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
                                   ),
                                   child: GestureDetector(
                                     onTap:
-                                        () => context.go('/view/${forum.id}'),
+                                        () => context.push('/view/${forum.id}'),
                                     child: Stack(
                                       children: [
                                         ModernFeedCard(

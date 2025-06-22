@@ -211,7 +211,7 @@ class _BookSelectionPageState extends State<BookSelectionPage> {
                 _isSelectionComplete
                     ? () {
                       likeBooks();
-                      context.go('/dashboard/home');
+                      context.push('/dashboard/home');
                     }
                     : null,
             style: ElevatedButton.styleFrom(

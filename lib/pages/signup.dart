@@ -241,7 +241,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               );
                               if (message == 'success') {
                                 Navigator.of(context).pop(); // Close the dialog
-                                context.go('/signin/signup/verify');
+                                context.push('/signin/signup/verify');
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Registration successful!'),

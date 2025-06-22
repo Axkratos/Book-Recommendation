@@ -140,9 +140,9 @@ class _HeroSection extends StatelessWidget {
                 text: "Explore the Project",
                 onPressed: () {
                   if (ProviderUser.getToken == '') {
-                    context.go('/signin');
+                    context.push('/signin');
                   } else {
-                    context.go('/dashboard/home');
+                    context.push('/dashboard/home');
                   }
                 },
                 isLarge: true,
@@ -203,9 +203,9 @@ class _TrendingBooksSectionState extends State<_TrendingBooksSection> {
                   return GestureDetector(
                     onTap: () {
                       if (ProviderUser.getToken == '') {
-                        context.go('/signin');
+                        context.push('/signin');
                       } else {
-                        context.go(
+                        context.push(
                           '/book/${book['isbn10']}/${Uri.encodeComponent(book['title'] ?? 'Unknown')}',
                         );
                       }

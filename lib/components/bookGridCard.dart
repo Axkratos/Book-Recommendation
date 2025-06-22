@@ -17,7 +17,7 @@ class BookGridCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.go('/book/${book.id}/${book.title}');
+        context.push('/book/${book.id}/${book.title}');
       },
       child: Container(
         padding: const EdgeInsets.only(bottom: 16),

@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'dart:html' as html;
+
 import 'dart:ui' as ui; // Explicitly import for ImageFilter
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:http/http.dart' as http;
-import 'package:google_fonts/google_fonts.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as path;
 
 // --- NEW MODERN COLOR PALETTE ---
 // This palette combines a sophisticated dark theme with a vibrant, modern accent.
@@ -50,7 +52,6 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   bool _isUploading = false;
   String _uploadStatus = '';
   String? _sessionId;
-  html.WebSocket? _ws;
 
   bool _isChatExpanded = false;
   late AnimationController _animationController;
@@ -98,13 +99,21 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
       final fileBytes = result.files.single.bytes!;
       final fileName = result.files.single.name;
       final uri = Uri.parse('${chatUrl}/api/sessions/$_sessionId/upload');
-      final request = html.HttpRequest();
-      request.open('POST', uri.toString());
-      final formData = html.FormData();
-      formData.appendBlob('file', html.Blob([fileBytes]), fileName);
 
-      request.onLoadEnd.listen((event) {
-        if (request.status == 200) {
+      try {
+        var request = http.MultipartRequest('POST', uri);
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            fileBytes,
+            filename: fileName,
+            contentType: MediaType('application', 'pdf'),
+          ),
+        );
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
           _pdfController?.dispose();
           setState(() {
             _pdfFilename = fileName;
@@ -118,11 +127,15 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
         } else {
           setState(() {
             _isUploading = false;
-            _uploadStatus = 'Upload failed: ${request.responseText}';
+            _uploadStatus = 'Upload failed: ${response.body}';
           });
         }
-      });
-      request.send(formData);
+      } catch (e) {
+        setState(() {
+          _isUploading = false;
+          _uploadStatus = 'Upload failed: $e';
+        });
+      }
     }
   }
 

@@ -234,7 +234,7 @@ class _BookExploreSectionState extends State<BookExploreSection> {
                   genre: genre.name,
                   gradientColors: genre.gradientColors,
                   onTap: () {
-                    context.go('/search/${Uri.encodeComponent(genre.name)}');
+                    context.push('/search/${Uri.encodeComponent(genre.name)}');
                   },
                 ),
               ),
@@ -565,7 +565,7 @@ class _AuthorCardState extends State<AuthorCard> {
       child: GestureDetector(
         onTap: () {
           // Navigate to search page with author name as prompt
-          context.go('/search/${Uri.encodeComponent(widget.author.name)}');
+          context.push('/search/${Uri.encodeComponent(widget.author.name)}');
         },
         child: SizedBox(
           width: 260, // Fixed width for each card
@@ -823,7 +823,7 @@ class _BookCardSectionState extends State<BookCardSection> {
                   icon: const Icon(Icons.explore),
                   label: const Text('Explore Fiction Books'),
                   onPressed: () {
-                    context.go('/search/fiction');
+                    context.push('/search/fiction');
                   },
                 ),
               ],
@@ -900,7 +900,7 @@ class _BookGridCardState extends State<BookGridCard> {
       onExit: (_) => setState(() => _hovering = false),
       child: GestureDetector(
         onTap: () {
-          context.go(
+          context.push(
             '/book/${widget.book.id}/${Uri.encodeComponent(widget.book.title)}',
           );
         },

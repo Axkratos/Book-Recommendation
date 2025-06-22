@@ -83,7 +83,7 @@ class ModernBookListItem extends StatelessWidget {
           child: GestureDetector(
             onTap: () {
               if (isbn10 != null && isbn10.isNotEmpty) {
-                context.go('/book/$isbn10/${Uri.encodeComponent(title)}');
+                context.push('/book/$isbn10/${Uri.encodeComponent(title)}');
               }
             },
             child:

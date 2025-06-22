@@ -22,7 +22,6 @@ import 'package:bookrec/pages/view_discussion.dart';
 import 'package:bookrec/pages/write_review.dart';
 import 'package:bookrec/provider/authprovider.dart';
 import 'package:bookrec/provider/bookprovider.dart';
-import 'package:bookrec/provider/catprovider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -193,7 +192,6 @@ class MainApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => CatProvider()),
         ChangeNotifierProvider(create: (_) => Bookprovider()),
       ],
       child: MaterialApp.router(

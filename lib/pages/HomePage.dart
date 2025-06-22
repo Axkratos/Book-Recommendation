@@ -35,7 +35,7 @@ class Homepage extends StatelessWidget {
                 /// --- Left: BookRec logo ---
                 GestureDetector(
                   onTap: () {
-                    context.go('/');
+                    context.push('/');
                     // Navigate to the home page
                   },
                   child: title(),
@@ -50,7 +50,7 @@ class Homepage extends StatelessWidget {
                       // Wrap TextField with GestureDetector for tap action
                       child: TextField(
                         onSubmitted: (value) {
-                          context.go('/search/$value');
+                          context.push('/search/$value');
                         },
                         style: GoogleFonts.literata(
                           fontSize: 16,
@@ -107,7 +107,7 @@ class Homepage extends StatelessWidget {
 Widget _topButton(IconData icon, String label, BuildContext context) {
   return TextButton.icon(
     onPressed: () {
-      context.go('/mood');
+      context.push('/mood');
     },
     icon: Icon(icon, size: 18, color: Colors.purple[700]),
     label: Text(
@@ -123,9 +123,9 @@ Widget _signupButton(BuildContext context) {
   return GestureDetector(
     onTap: () {
       if (ProviderUser.getToken == '') {
-        context.go('/signin');
+        context.push('/signin');
       } else {
-        context.go('/dashboard/home');
+        context.push('/dashboard/home');
       }
     },
     child: Container(

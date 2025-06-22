@@ -413,11 +413,11 @@ class _ChatWidgetState extends State<ChatWidget>
               author: data['author']?.toString() ?? 'Unknown Author',
               description: data['description']?.toString() ?? 'No description.',
               onTap: () {
-                // Use context.go to navigate to the book details page
+                // Use context.push to navigate to the book details page
                 final isbn = data['isbn10']?.toString() ?? '';
                 final title = data['title']?.toString() ?? '';
                 if (isbn.isNotEmpty && title.isNotEmpty) {
-                  context.go('/book/$isbn/$title');
+                  context.push('/book/$isbn/$title');
                 }
                 HapticFeedback.lightImpact();
               },

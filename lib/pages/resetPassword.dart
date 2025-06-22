@@ -44,7 +44,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       if (response.statusCode == 200) {
         _responseMessage = 'Password reset successful! You can now log in.';
         Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) context.go('/signin');
+          if (mounted) context.push('/signin');
         });
       } else {
         _responseMessage = 'Failed to reset password. Please try again.';

@@ -35,7 +35,7 @@ class _IsloadingState extends State<Isloading> {
       userProvider.setToken = (result['token'] ?? '');
       await Future.delayed(Duration(seconds: 1));
       if (!mounted) return;
-      context.go('/like');
+      context.push('/like');
     } else {
       setState(() {
         _isVerifying = false;
