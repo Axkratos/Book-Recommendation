@@ -118,7 +118,7 @@ class _HeroSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Book Recommendations",
+                "Books & Recs",
                 style: GoogleFonts.caveat(
                   fontSize: 72,
                   fontWeight: FontWeight.w700,
