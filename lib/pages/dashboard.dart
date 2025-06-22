@@ -132,83 +132,95 @@ class _DashboardPageState extends State<DashboardPage> {
     final double sidebarWidth =
         screenWidth * 0.08 < 100 ? 100 : screenWidth * 0.08;
 
+    Widget sidebar = Container(
+      width: sidebarWidth,
+      height: screenHeight,
+      decoration: BoxDecoration(
+        color: vintageSidebarBg,
+        boxShadow: [
+          BoxShadow(
+            color: vintageBorderColor.withOpacity(0.5),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(2, 0),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.05),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: FaIcon(
+                FontAwesomeIcons.bookBookmark,
+                color: vintageCream.withOpacity(0.7),
+                size: 35,
+              ),
+            ),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.house,
+              tooltip: "Home",
+              index: 0,
+            ),
+            SizedBox(height: screenHeight * 0.015),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.layerGroup,
+              tooltip: "Shelf",
+              index: 1,
+            ),
+            SizedBox(height: screenHeight * 0.015),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.users,
+              tooltip: "Discussions",
+              index: 2,
+            ),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.fire,
+              tooltip: 'Trending',
+              index: 3,
+            ),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.readme,
+              tooltip: "Reader",
+              index: 4,
+            ),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.user,
+              tooltip: "Profile",
+              index: 5,
+            ),
+            const Spacer(),
+            _buildMenuItem(
+              icon: FontAwesomeIcons.rightFromBracket,
+              tooltip: "Logout",
+              index: 6,
+            ),
+          ],
+        ),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: vintageCream,
+      drawer:
+          screenWidth < 700
+              ? Drawer(
+                backgroundColor:
+                    Colors.transparent, // <-- Make Drawer transparent
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    child: SizedBox(width: 220, child: sidebar),
+                  ),
+                ),
+              )
+              : null,
       body: Stack(
         children: [
           Row(
             children: [
-              // Vintage Sidebar
-              Container(
-                width: sidebarWidth,
-                height: screenHeight, // Make it full height
-                decoration: BoxDecoration(
-                  color: vintageSidebarBg,
-                  boxShadow: [
-                    BoxShadow(
-                      color: vintageBorderColor.withOpacity(0.5),
-                      spreadRadius: 2,
-                      blurRadius: 8,
-                      offset: const Offset(2, 0), // changes position of shadow
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.05),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start, // Align to top
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 20.0),
-                        child: FaIcon(
-                          FontAwesomeIcons.bookBookmark, // Example logo
-                          color: vintageCream.withOpacity(0.7),
-                          size: 35,
-                        ),
-                      ),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.house,
-                        tooltip: "Home",
-                        index: 0,
-                      ),
-                      SizedBox(height: screenHeight * 0.015),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.layerGroup,
-                        tooltip: "Shelf",
-                        index: 1,
-                      ),
-                      SizedBox(height: screenHeight * 0.015),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.users,
-                        tooltip: "Discussions",
-                        index: 2,
-                      ),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.fire,
-                        tooltip: 'Trending',
-                        index: 3,
-                      ),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.readme,
-                        tooltip: "Reader",
-                        index: 4,
-                      ),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.user,
-                        tooltip: "Profile",
-                        index: 5,
-                      ),
-                      const Spacer(),
-                      _buildMenuItem(
-                        icon: FontAwesomeIcons.rightFromBracket,
-                        tooltip: "Logout",
-                        index: 6,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Main Content Area
+              if (screenWidth >= 700) sidebar,
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.symmetric(
@@ -220,10 +232,16 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ],
           ),
-          // --- Step 3: Use the new, encapsulated ChatWidget ---
-          // const ChatWidget(),   // <-- REMOVE THIS LINE
         ],
       ),
+      appBar:
+          screenWidth < 700
+              ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                iconTheme: IconThemeData(color: vintageDarkBrown),
+              )
+              : null,
     );
   }
 
