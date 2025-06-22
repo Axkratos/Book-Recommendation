@@ -65,8 +65,8 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
       if (!mounted) return; // <-- Add this line
       setState(() {
         _sessionId = data['session_id'];
+        _isConnected = true;
       });
-      _connectWebSocket(data['session_id']);
     } catch (e) {
       if (!mounted) return; // <-- Add this line
       setState(() {
@@ -208,20 +208,78 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_chatController.text.trim().isEmpty || !_isConnected) return;
-    final message = {'type': 'chat', 'message': _chatController.text.trim()};
+    final messageText = _chatController.text.trim();
     setState(() {
       _messages.add({
         'role': 'user',
-        'content': _chatController.text.trim(),
+        'content': messageText,
         'timestamp': DateTime.now().toIso8601String(),
       });
       _chatController.clear();
       _isTyping = true;
     });
-    _ws?.send(jsonEncode(message));
     _scrollToBottom();
+
+    if (_sessionId == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/sessions/$_sessionId/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'message': messageText}),
+      );
+      print('Chat response: ${response.body}');
+
+      // Fetch updated messages after sending
+      await _fetchMessages();
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'role': 'system',
+          'content': 'Failed to send message: $e',
+          'timestamp': DateTime.now().toIso8601String(),
+        });
+        _isTyping = false;
+      });
+    }
+  }
+
+  Future<void> _fetchMessages() async {
+    if (_sessionId == null) return;
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/sessions/$_sessionId/messages'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (!mounted) return;
+        setState(() {
+          // If data is a list of messages
+          if (data is List) {
+            _messages
+              ..clear()
+              ..addAll(data.cast<Map<String, dynamic>>());
+          } else if (data is Map && data.containsKey('messages')) {
+            // If backend returns { "messages": [...] }
+            _messages
+              ..clear()
+              ..addAll((data['messages'] as List).cast<Map<String, dynamic>>());
+          } else if (data is Map &&
+              data.containsKey('role') &&
+              data.containsKey('content')) {
+            // If backend returns a single message
+            _messages.add(data as Map<String, dynamic>);
+          }
+          _isTyping = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      setState(() {
+        _isTyping = false;
+      });
+    }
   }
   // --- end of logic section ---
 
@@ -238,7 +296,6 @@ class _ChatappState extends State<Chatapp> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _pdfController?.dispose();
-    _ws?.close();
     _scrollController.dispose();
     _animationController.dispose();
     super.dispose();
