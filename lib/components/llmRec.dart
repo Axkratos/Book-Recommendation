@@ -137,17 +137,19 @@ class _AIPromptSectionState extends State<AIPromptSection>
   /// Vertical layout optimized for mobile screens.
   Widget _buildMobileLayout(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(12.0), // Reduced padding for mobile
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // Make column height fit its content
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeader(),
-          const SizedBox(height: 16),
-          _buildPromptTextField(),
-          const SizedBox(height: 20),
-          // Align button to the right for a clean look
-          Align(alignment: Alignment.centerRight, child: _buildSummonButton()),
+          _buildHeader(fontSize: 17), // Smaller header
+          const SizedBox(height: 10),
+          _buildPromptTextField(fontSize: 14),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildSummonButton(isMobile: true),
+          ),
         ],
       ),
     );
@@ -159,13 +161,10 @@ class _AIPromptSectionState extends State<AIPromptSection>
       padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
       child: Row(
         children: [
-          // Take up some space with the header
-          Expanded(flex: 2, child: _buildHeader(textAlign: TextAlign.left)),
+          Expanded(flex: 2, child: _buildHeader()),
           const SizedBox(width: 24),
-          // Take up more space with the text field
           Expanded(flex: 3, child: _buildPromptTextField()),
           const SizedBox(width: 20),
-          // Button at the end
           _buildSummonButton(),
         ],
       ),
@@ -174,19 +173,21 @@ class _AIPromptSectionState extends State<AIPromptSection>
 
   // --- Reusable Widget Parts ---
 
-  Widget _buildHeader({TextAlign textAlign = TextAlign.start}) {
+  Widget _buildHeader({
+    TextAlign textAlign = TextAlign.start,
+    double fontSize = 22,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.auto_awesome_outlined, color: Colors.white, size: 28),
-        const SizedBox(width: 12),
+        const Icon(Icons.auto_awesome_outlined, color: Colors.white, size: 24),
+        const SizedBox(width: 10),
         Flexible(
           child: Text(
             "Conjure Your Next Read",
             textAlign: textAlign,
             style: GoogleFonts.orbitron(
-              // A futuristic font
-              fontSize: 22,
+              fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               shadows: [
@@ -200,69 +201,78 @@ class _AIPromptSectionState extends State<AIPromptSection>
     );
   }
 
-  Widget _buildPromptTextField() {
+  Widget _buildPromptTextField({double fontSize = 16}) {
     return TextField(
       controller: _promptController,
-      style: vintageTextStylellm.copyWith(color: Colors.white),
+      style: vintageTextStylellm.copyWith(
+        color: Colors.white,
+        fontSize: fontSize,
+      ),
       decoration: InputDecoration(
         hintText: "A sci-fi epic on a desert planet...",
-        hintStyle: vintageTextStylellm.copyWith(color: Colors.white54),
+        hintStyle: vintageTextStylellm.copyWith(
+          color: Colors.white54,
+          fontSize: fontSize - 2,
+        ),
         filled: true,
         fillColor: Colors.white.withOpacity(0.1),
-        prefixIcon: const Icon(Icons.edit_note, color: Colors.white70),
+        prefixIcon: const Icon(
+          Icons.edit_note,
+          color: Colors.white70,
+          size: 20,
+        ),
+        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(10.0),
           borderSide: const BorderSide(color: Colors.cyanAccent, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
         ),
       ),
     );
   }
 
-  Widget _buildSummonButton() {
-    // The "Summon" button, now an ElevatedButton for better semantics and built-in effects.
+  Widget _buildSummonButton({bool isMobile = false}) {
     return ElevatedButton.icon(
       onPressed: _summonBook,
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        backgroundColor: const Color(0xFFF02E9A), // A vibrant magenta
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 24,
+          vertical: isMobile ? 10 : 16,
         ),
-        // Adding a glow on hover/press
+        backgroundColor: const Color(0xFFF02E9A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
         foregroundColor: Colors.white,
         shadowColor: Colors.pinkAccent,
         elevation: 8,
+        textStyle: vintageTextStylellm.copyWith(
+          fontWeight: FontWeight.bold,
+          fontSize: isMobile ? 14 : 16,
+        ),
       ),
-      // The button's content changes based on the `_isSummoning` state
       icon:
           _isSummoning
-              ? Container() // No icon when loading
-              : const Icon(Icons.auto_awesome, size: 20),
+              ? Container()
+              : Icon(Icons.auto_awesome, size: isMobile ? 18 : 20),
       label:
           _isSummoning
-              ? const SizedBox(
-                height: 20,
-                width: 20,
+              ? SizedBox(
+                height: isMobile ? 16 : 20,
+                width: isMobile ? 16 : 20,
                 child: CircularProgressIndicator(
                   color: Colors.white,
-                  strokeWidth: 2.5,
+                  strokeWidth: 2.0,
                 ),
               )
-              : Text(
-                "Summon",
-                style: vintageTextStylellm.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
+              : Text("Summon"),
     );
   }
 
