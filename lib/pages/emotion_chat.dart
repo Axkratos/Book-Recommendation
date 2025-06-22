@@ -408,6 +408,7 @@ class _ChatWidgetState extends State<ChatWidget>
           if (msg['type'] == 'recommendation') {
             final data = msg['data'] ?? {};
             child = _BookRecommendationCard(
+              thumbnail: data['thumbnail'] ?? '',
               title: data['title']?.toString() ?? 'Unknown Title',
               author: data['author']?.toString() ?? 'Unknown Author',
               description: data['description']?.toString() ?? 'No description.',
@@ -605,9 +606,11 @@ class _BookRecommendationCard extends StatelessWidget {
   final String author;
   final String description;
   final VoidCallback onTap;
+  final String thumbnail;
 
   const _BookRecommendationCard({
     Key? key,
+    required this.thumbnail,
     required this.title,
     required this.author,
     required this.description,
@@ -630,25 +633,61 @@ class _BookRecommendationCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Book Cover Placeholder
-              Container(
-                width: 70,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: LinearGradient(
-                    colors: [
-                      kModernBlue.withOpacity(0.5),
-                      kModernPurple.withOpacity(0.5),
-                    ],
-                    begin: Alignment.bottomLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.book_online_rounded,
-                  color: Colors.white70,
-                  size: 30,
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child:
+                    thumbnail.isNotEmpty
+                        ? Image.network(
+                          thumbnail,
+                          width: 70,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                width: 70,
+                                height: 100,
+                                color: kModernBlue.withOpacity(0.2),
+                                child: const Icon(
+                                  Icons.book_online_rounded,
+                                  color: Colors.white70,
+                                  size: 30,
+                                ),
+                              ),
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              width: 70,
+                              height: 100,
+                              color: kModernBlue.withOpacity(0.1),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: kModernPurple,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                        : Container(
+                          width: 70,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            gradient: LinearGradient(
+                              colors: [
+                                kModernBlue.withOpacity(0.5),
+                                kModernPurple.withOpacity(0.5),
+                              ],
+                              begin: Alignment.bottomLeft,
+                              end: Alignment.topRight,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.book_online_rounded,
+                            color: Colors.white70,
+                            size: 30,
+                          ),
+                        ),
               ),
               const SizedBox(width: 12),
               // Book Info
