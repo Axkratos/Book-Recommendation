@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:bookrec/pages/FeaturedPage.dart';
+import 'package:bookrec/pages/emotion_chat.dart'; // Add this import
 import 'package:provider/provider.dart';
 
 class Homepage extends StatelessWidget {
@@ -93,7 +94,12 @@ class Homepage extends StatelessWidget {
           ),
         ),
       ),
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          const ChatWidget(), // Add the chat widget overlay
+        ],
+      ),
     );
   }
 }
