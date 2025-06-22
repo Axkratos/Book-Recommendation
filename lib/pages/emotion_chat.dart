@@ -108,6 +108,16 @@ class _ChatWidgetState extends State<ChatWidget> {
 
     final userMessage = message.trim();
     _controller.clear();
+
+    _userMessageCount++;
+    // When userMessageCount == 5, only show recommendations, skip chat
+    if (_userMessageCount % 5 == 0) {
+      await _fetchRecommendations();
+      setState(() => _isSending = false);
+      _scrollToBottom();
+      return;
+    }
+
     _addMessage('user', text: userMessage);
     _scrollToBottom(50);
 
@@ -133,11 +143,6 @@ class _ChatWidgetState extends State<ChatWidget> {
       _addMessage('bot', text: 'Error sending message.');
     }
 
-    _userMessageCount++;
-    // Fetch recommendations every 5 user messages
-    if (_userMessageCount % 5 == 0) {
-      _fetchRecommendations();
-    }
     _scrollToBottom();
   }
 
