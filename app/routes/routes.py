@@ -1,6 +1,10 @@
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import List
+from pydantic import BaseModel
+import google.generativeai as genai
+import os
+import asyncio
 import logging
 from app.controllers.recommender import (
     models, BookRec, ItemRecRequest, UserRecRequest, 
@@ -330,7 +334,42 @@ async def recommend_books(query: Query):
     """
     return recommend_books_logic(query.text)
 
+# Model for the request
+class BookInfo(BaseModel):
+    title: str
+    authors: str
+    description: str
+    categories: str
 
+class BookTitleListRequest(BaseModel):
+    titles: List[str]
+
+class UserBioResponse(BaseModel):
+    user_bio: str
+
+# Gemini setup
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    raise ValueError("GOOGLE_API_KEY environment variable is required")
+genai.configure(api_key=GOOGLE_API_KEY)
+gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+@router.post("/user/bio", response_model=UserBioResponse)
+async def generate_user_bio(request: BookTitleListRequest):
+    """
+    Create a short, friendly, and insightful user bio based on the 5 book titles.
+    """
+    prompt = (
+        "Given that a user enjoys these five books: "
+        f"{', '.join(request.titles)}. "
+        "Write a short, friendly, and insightful 2-3 sentence biography about the user, "
+        "focusing on their personality, interests, and reading taste. "
+        "Do not just repeat the book titles. Use natural English."
+    )
+    try:
+        bio = await asyncio.to_thread(lambda: gemini_model.generate_content(prompt).text)
+        return UserBioResponse(user_bio=bio.strip())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating user bio: {e}")
 
 @router.get("/recommend/{user_id}", response_model=List[str])
 async def recommend_for_user(user_id: str, top_n: int = 12):
@@ -361,4 +400,5 @@ async def health_check():
         "books_with_ratings": len(models.item_idx_map),
         "last_retrain": models.last_retrain.isoformat() if models.last_retrain else None
     }
+
 
