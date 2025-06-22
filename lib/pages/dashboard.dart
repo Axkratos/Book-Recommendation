@@ -87,6 +87,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   context.go('/ebook'); // Reader
                   break;
                 case 5:
+                  context.go('/dashboard/profile'); // Reader
+                  break;
+                case 6:
                   ProviderUser.logout(); // Logout
                   context.go('/'); // Redirect to sign-in page
                   break;
@@ -117,7 +120,8 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
         ),
-      ));
+      ),
+    );
   }
 
   @override
@@ -188,11 +192,16 @@ class _DashboardPageState extends State<DashboardPage> {
                         tooltip: "Reader",
                         index: 4,
                       ),
+                      _buildMenuItem(
+                        icon: FontAwesomeIcons.user,
+                        tooltip: "Profile",
+                        index: 5,
+                      ),
                       const Spacer(),
                       _buildMenuItem(
                         icon: FontAwesomeIcons.rightFromBracket,
                         tooltip: "Logout",
-                        index: 5,
+                        index: 6,
                       ),
                     ],
                   ),

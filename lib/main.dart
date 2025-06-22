@@ -13,6 +13,7 @@ import 'package:bookrec/pages/dashboard_trending.dart';
 import 'package:bookrec/pages/forgotPassword.dart';
 import 'package:bookrec/pages/isLoading.dart';
 import 'package:bookrec/pages/likeBook.dart';
+import 'package:bookrec/pages/profilePage.dart';
 import 'package:bookrec/pages/resetPassword.dart';
 import 'package:bookrec/pages/sign.dart';
 import 'package:bookrec/pages/signup.dart';
@@ -152,6 +153,10 @@ final GoRouter _router = GoRouter(
             GoRoute(
               path: '/dashboard/trending',
               builder: (context, state) => const DashboardTrending(),
+            ),
+            GoRoute(
+              path: '/dashboard/profile',
+              builder: (context, state) => const ProfilePage(),
             ),
           ],
         ),
