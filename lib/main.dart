@@ -68,7 +68,7 @@ final GoRouter _router = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => RenaissanceAthenaeumPage(),
+          builder: (context, state) => BookProjectShowcasePage(),
         ),
 
         GoRoute(
