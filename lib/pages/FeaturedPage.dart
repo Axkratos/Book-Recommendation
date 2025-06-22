@@ -1,337 +1,363 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+import 'package:bookrec/services/booksapi.dart'; // Add this import
 
-// --- MAIN WIDGET: THE "RENAISSANCE ATHENAEUM" LANDING PAGE ---
-class RenaissanceAthenaeumPage extends StatefulWidget {
-  const RenaissanceAthenaeumPage({super.key});
+// --- MAIN WIDGET: THE PROJECT SHOWCASE PAGE ---
+class BookProjectShowcasePage extends StatefulWidget {
+  const BookProjectShowcasePage({super.key});
 
   @override
-  State<RenaissanceAthenaeumPage> createState() =>
-      _RenaissanceAthenaeumPageState();
+  State<BookProjectShowcasePage> createState() =>
+      _BookProjectShowcasePageState();
 }
 
-class _RenaissanceAthenaeumPageState extends State<RenaissanceAthenaeumPage>
-    with TickerProviderStateMixin {
+class _BookProjectShowcasePageState extends State<BookProjectShowcasePage> {
   final ScrollController _scrollController = ScrollController();
-  late AnimationController _particleController;
-  Offset _mousePosition = Offset.zero;
-  double _scrollOffset = 0;
 
-  final List<GoldenMote> _motes = [];
-
-  // Vibrant, yet sophisticated color palette
-  static const Color parchment = Color(0xfffdf6e3);
-  static const Color sepiaInk = Color(0xff5d4037);
-  static const Color goldAccent = Color(0xffd4af37); // Brighter Gold
-  static const Color tealAccent = Color(0xff008080);
-  static const Color terracottaAccent = Color(0xffE2725B);
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(() {
-      setState(() => _scrollOffset = _scrollController.offset);
-    });
-
-    _particleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 25),
-    )..addListener(_updateMotes);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeMotes(MediaQuery.of(context).size);
-      _particleController.repeat();
-    });
-  }
-
-  void _initializeMotes(Size size) {
-    final random = Random();
-    for (int i = 0; i < 40; i++) {
-      _motes.add(GoldenMote(
-        position: Offset(
-            random.nextDouble() * size.width, random.nextDouble() * size.height),
-        velocity: Offset(
-            (random.nextDouble() - 0.5) * 0.4, (random.nextDouble() - 0.5) * 0.4),
-        radius: random.nextDouble() * 1.5 + 1.0,
-      ));
-    }
-  }
-
-  void _updateMotes() {
-    final size = MediaQuery.of(context).size;
-    if (size.isEmpty) return;
-    for (var mote in _motes) {
-      mote.position += mote.velocity;
-      if (mote.position.dx < 0) mote.position = Offset(size.width, mote.position.dy);
-      if (mote.position.dx > size.width) mote.position = Offset(0, mote.position.dy);
-      if (mote.position.dy < 0) mote.position = Offset(mote.position.dx, size.height);
-      if (mote.position.dy > size.height) mote.position = Offset(mote.position.dx, 0);
-    }
-    setState(() {});
-  }
+  // Vibrant & diverse color palette for a feature-rich showcase
+  static const Color parchment = Color(0xFFFBF5E9);
+  static const Color ink = Color(0xFF2C2B27);
+  static const Color warmAccent = Color(0xFFC97B63);
+  static const Color coolAccent = Color(
+    0xFF5C6B73,
+  ); // For blueprint/tech sections
+  static const Color vibrantGreen = Color(0xFF3C8A7D);
+  static const Color deepPurple = Color(0xFF594A65);
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _particleController.dispose();
     super.dispose();
   }
 
-  double _getSectionProgress(double sectionTop, double sectionHeight) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Tighter scroll trigger for a more compact feel
-    double progress = (_scrollOffset - sectionTop + screenHeight * 0.9) /
-        (sectionHeight + screenHeight * 0.1);
-    return progress.clamp(0.0, 1.0);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: parchment,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                  'https://www.transparenttextures.com/patterns/old-paper.png',
+                ),
+                repeat: ImageRepeat.repeat,
+                opacity: 0.3,
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                _HeroSection(),
+                _TrendingBooksSection(),
+                _CoreFeaturesShowcase(),
+                const SizedBox(height: 120),
+                _TechArchitectureSection(),
+                _FinalCtaSection(),
+                _FooterSection(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- FEATURE-FOCUSED SECTIONS ---
+
+class _HeroSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 600,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _FloatingIcon(
+            icon: Icons.search,
+            top: 50,
+            left: 100,
+            rotation: -0.2,
+            speed: 0.2,
+          ),
+          _FloatingIcon(
+            icon: Icons.thumb_up_alt_outlined,
+            top: 150,
+            right: 80,
+            rotation: 0.3,
+            speed: 0.35,
+          ),
+          _FloatingIcon(
+            icon: Icons.devices,
+            bottom: 80,
+            left: 150,
+            rotation: 0.1,
+            speed: 0.25,
+          ),
+          _FloatingIcon(
+            icon: Icons.picture_as_pdf_outlined,
+            bottom: 120,
+            right: 180,
+            rotation: -0.1,
+            speed: 0.3,
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Book Recommendations",
+                style: GoogleFonts.caveat(
+                  fontSize: 72,
+                  fontWeight: FontWeight.w700,
+                  color: _BookProjectShowcasePageState.ink,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "A Modern Reader's Toolkit.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lora(
+                  fontSize: 24,
+                  fontStyle: FontStyle.italic,
+                  color: _BookProjectShowcasePageState.ink.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendingBooksSection extends StatefulWidget {
+  @override
+  State<_TrendingBooksSection> createState() => _TrendingBooksSectionState();
+}
+
+class _TrendingBooksSectionState extends State<_TrendingBooksSection> {
+  late Future<List> _trendingBooksFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _trendingBooksFuture = BooksInfo().getTrendingBooks();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 900;
-
-    // Adjusted section heights for compactness, now 9 sections total
-    final sectionHeights = List.generate(9, (_) => isMobile ? 800.0 : 900.0);
-    // Make the tech stack section taller to accommodate more info
-    sectionHeights[5] = isMobile ? 1200.0 : 1000.0; 
-    
-    final sectionTops = [0.0];
-    for (int i = 0; i < sectionHeights.length - 1; i++) {
-      sectionTops.add(sectionTops.last + sectionHeights[i]);
-    }
-
-    return Scaffold(
-      backgroundColor: parchment,
-      body: MouseRegion(
-        onHover: (event) => setState(() => _mousePosition = event.position),
-        child: Stack(
-          children: [
-            _GoldenMoteBackground(motes: _motes),
-            SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
-                children: [
-                  _SectionContainer(height: sectionHeights[0], child: _buildHeroSection(isMobile)),
-                  _SectionContainer(height: sectionHeights[1], child: _buildManifestoSection(isMobile, _getSectionProgress(sectionTops[1], sectionHeights[1]))),
-                  _SectionContainer(height: sectionHeights[2], child: _buildAnatomyOfAStorySection(isMobile, _getSectionProgress(sectionTops[2], sectionHeights[2]))),
-                  _SectionContainer(height: sectionHeights[3], child: _buildDiscoverySection(isMobile)),
-                  _SectionContainer(height: sectionHeights[4], child: _buildCommunitySection(isMobile, _getSectionProgress(sectionTops[4], sectionHeights[4]))),
-                  _SectionContainer(height: sectionHeights[5], child: _buildTechStackSection(isMobile, _getSectionProgress(sectionTops[5], sectionHeights[5]))),
-                  _SectionContainer(height: sectionHeights[6], child: _buildBookshelfSection(isMobile, _getSectionProgress(sectionTops[6], sectionHeights[6]))),
-                  _SectionContainer(height: sectionHeights[7], child: _buildPlatformSection(isMobile, _getSectionProgress(sectionTops[7], sectionHeights[7]))),
-                  _SectionContainer(height: sectionHeights[8], child: _buildCtaSection(isMobile)),
-                ],
-              ),
-            ),
-          ],
+    return Column(
+      children: [
+        _SectionHeader(title: "Explore Trending Books"),
+        const Text(
+          "Fetched from our custom API endpoint",
+          style: TextStyle(color: _BookProjectShowcasePageState.coolAccent),
         ),
-      ),
-    );
-  }
-
-  // --- SECTION BUILDERS ---
-  Widget _buildHeroSection(bool isMobile) => Center(
-        child: Text(
-          "The\nAlgorithm\nof Stories.",
-          textAlign: TextAlign.center,
-          style: GoogleFonts.ebGaramond(
-            fontSize: isMobile ? 60 : 100,
-            fontWeight: FontWeight.w600,
-            color: sepiaInk,
-            height: 1.1,
+        const SizedBox(height: 40),
+        SizedBox(
+          height: 280,
+          child: FutureBuilder<List>(
+            future: _trendingBooksFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text("Error loading trending books"));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(child: Text("No trending books found."));
+              }
+              final books = snapshot.data!;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                physics: const BouncingScrollPhysics(),
+                itemCount: books.length,
+                itemBuilder: (context, index) {
+                  final book = books[index];
+                  return _BookCoverCard(
+                    imageUrl:
+                        book['thumbnail'] ??
+                        'https://via.placeholder.com/150x220?text=No+Cover',
+                    title: book['title'] ?? 'Unknown',
+                    rotation: (index % 2 == 0 ? 1 : -1) * (0.01 * (index % 5)),
+                  );
+                },
+              );
+            },
           ),
         ),
-      );
-
-  Widget _buildManifestoSection(bool isMobile, double progress) => _SectionContent(
-        isMobile: isMobile,
-        progress: progress,
-        title: "From Codex to Code",
-        accentColor: terracottaAccent,
-        body:
-            "We see knowledge not as static entries in a database, but as a living tapestry. BookRec merges the wisdom of the ages with intelligent algorithms to illuminate the hidden connections between stories, authors, and ideas, creating a literary journey as unique as you are.",
-      );
-
-  Widget _buildAnatomyOfAStorySection(bool isMobile, double progress) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _SectionHeader(title: "The Anatomy of a Story", progress: progress, accentColor: tealAccent),
-          const SizedBox(height: 20),
-          Expanded(child: _VitruvianVisualizer(progress: progress)),
-        ],
-      );
-
-  Widget _buildDiscoverySection(bool isMobile) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _SectionHeader(title: "Explore the Great Library", progress: 1.0, isStatic: true, accentColor: goldAccent),
-          const SizedBox(height: 60),
-          _Marquee(text: "PLATO • ARISTOTLE • MARY SHELLEY • SHAKESPEARE • DOSTOEVSKY • TOLKIEN • ASIMOV • ", color: sepiaInk.withOpacity(0.7)),
-          const SizedBox(height: 20),
-          const _Marquee(text: "COSMOLOGY • PHILOSOPHY • ALCHEMY • MYTHOLOGY • FRANKENSTEIN • AI • ETHICS •", reversed: true, duration: Duration(seconds: 45), color: terracottaAccent),
-          const SizedBox(height: 20),
-          _Marquee(text: "KNOWLEDGE • CREATION • GODS • MONSTERS • HUMANITY • THE FUTURE • THE PAST • ", duration: Duration(seconds: 60), color: sepiaInk.withOpacity(0.7)),
-          const SizedBox(height: 20),
-          const _Marquee(text: "FLUTTER • PYTHON • PANDAS • SCIKIT-LEARN • FLASK • REACT • AWS • JUPYTER •", reversed: true, duration: Duration(seconds: 50), color: tealAccent),
-        ],
-      );
-  
-  Widget _buildCommunitySection(bool isMobile, double progress) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _SectionHeader(title: "A Constellation of Minds", progress: progress, accentColor: terracottaAccent),
-          const SizedBox(height: 20),
-          Expanded(child: _ConstellationVisualizer(progress: progress)),
-        ],
-      );
-
-  Widget _buildTechStackSection(bool isMobile, double progress) {
-    Widget textColumn = Expanded(
-      flex: isMobile ? 0 : 3,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-        children: [
-          _SectionHeader(title: "The Digital Athenaeum's Engine", progress: progress, accentColor: tealAccent),
-          const SizedBox(height: 25),
-          _TechInfoPanel(
-              title: "Data Science & Machine Learning",
-              body:
-                  "Our recommendation core is powered by Python, utilizing libraries like Pandas and Scikit-learn. We employ a hybrid model of collaborative and content-based filtering to analyze metadata, user ratings, and textual content, ensuring nuanced and accurate suggestions.",
-              progress: progress),
-          const SizedBox(height: 25),
-          _TechInfoPanel(
-              title: "Full-Stack Architecture",
-              body:
-                  "A robust Flask & Flutter framework delivers a seamless experience. The backend provides RESTful APIs for data, while the frontend is built with Flutter for a highly performant, natively-compiled application on web, mobile, and desktop from a single codebase.",
-              progress: progress),
-        ],
-      ),
-    );
-    
-    Widget visualColumn = Expanded(
-      flex: isMobile ? 0 : 2,
-      child: _TechStackVisualizer(progress: progress),
-    );
-
-    if(isMobile) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [textColumn, const SizedBox(height: 40), SizedBox(height: 300, child: visualColumn)],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        textColumn,
-        const SizedBox(width: 50),
-        visualColumn,
       ],
     );
   }
-
-  Widget _buildBookshelfSection(bool isMobile, double progress) => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _SectionHeader(title: "Your Personal Grimoire", progress: progress, accentColor: goldAccent),
-          const SizedBox(height: 20),
-          Expanded(child: _GenerativeBookVisualizer(progress: progress)),
-        ],
-      );
-  
-  Widget _buildPlatformSection(bool isMobile, double progress) => _SectionContent(
-        isMobile: isMobile,
-        progress: progress,
-        title: "The Inventor's Workshop",
-        accentColor: terracottaAccent,
-        body:
-            "From desktop study to mobile folio, your library is always at hand. Our platform is meticulously crafted to provide a seamless, elegant experience across all your devices, as if designed by a master artisan.",
-        customVisual: _ArchitecturalBlueprints(progress: progress));
-  
-  Widget _buildCtaSection(bool isMobile) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Begin Your Opus.",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.ebGaramond(
-                fontSize: isMobile ? 48 : 72,
-                fontWeight: FontWeight.w600,
-                color: sepiaInk,
-              ),
-            ),
-            const SizedBox(height: 40),
-            _CalligraphyButton(text: 'Become a Scribe', onTap: (){}),
-            const SizedBox(height: 100),
-            Text(
-              "BookRec © ${DateTime.now().year} — Crafted with Flutter & Python",
-              style: GoogleFonts.lato(color: Colors.brown[300], fontSize: 14),
-            ),
-          ],
-        ),
-      );
 }
 
-// --- DATA & HELPER WIDGETS ---
-
-class GoldenMote {
-  Offset position;
-  Offset velocity;
-  double radius;
-  GoldenMote({required this.position, required this.velocity, required this.radius});
-}
-
-class _SectionContainer extends StatelessWidget {
-  final Widget child;
-  final double height;
-  const _SectionContainer({required this.child, required this.height});
-
+class _CoreFeaturesShowcase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     return Container(
-      height: height,
-      width: width,
-      padding: EdgeInsets.symmetric(
-          horizontal: width > 850 ? 100 : 30, vertical: 50),
-      child: child,
+      padding: const EdgeInsets.symmetric(vertical: 100),
+      child: Column(
+        children: [
+          _SectionHeader(title: "Core Project Features"),
+          const SizedBox(height: 80),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 32,
+              runSpacing: 32,
+              children: [
+                SizedBox(
+                  width: 320,
+                  height: 320,
+
+                  child: _ScrollFadeIn(child: _FeatureCard.search()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.discussion()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.crossPlatform()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.pdfReader()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.userAuth()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.itemBased()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.collaborative()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.llm()),
+                ),
+                SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: _ScrollFadeIn(child: _FeatureCard.emotionBased()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final double progress;
-  final bool isStatic;
-  final Color accentColor;
-
-  const _SectionHeader({
-    required this.title, 
-    required this.progress, 
-    this.isStatic = false, 
-    required this.accentColor
+class _PositionedFeature extends StatelessWidget {
+  final Widget child;
+  final double? top, bottom, left, right;
+  final double rotation;
+  const _PositionedFeature({
+    required this.child,
+    this.top,
+    this.bottom,
+    this.left,
+    this.right,
+    this.rotation = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tProgress = Curves.easeOut.transform(progress);
-    return Opacity(
-      opacity: isStatic ? 1.0 : tProgress,
-      child: Transform.translate(
-        offset: isStatic ? Offset.zero : Offset(0, 30 * (1 - tProgress)),
-        child: Text(
-          title.toUpperCase(),
-          textAlign: TextAlign.center,
-          style: GoogleFonts.lato(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 6,
-            color: accentColor,
+    return Positioned(
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+      child: _ScrollFadeIn(
+        delay: Duration(milliseconds: (200 + Random().nextInt(300))),
+        child: Transform.rotate(angle: rotation, child: child),
+      ),
+    );
+  }
+}
+
+class _TechArchitectureSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
+      decoration: BoxDecoration(
+        color: _BookProjectShowcasePageState.coolAccent.withOpacity(0.95),
+        image: const DecorationImage(
+          image: NetworkImage(
+            'https://www.transparenttextures.com/patterns/graphy.png',
+          ),
+          repeat: ImageRepeat.repeat,
+          opacity: 0.2,
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            children: [
+              _ScrollFadeIn(
+                child: Text(
+                  "The Architecture",
+                  style: GoogleFonts.lora(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: _BookProjectShowcasePageState.parchment,
+                  ),
+                ),
+              ),
+              _ScrollFadeIn(
+                delay: const Duration(milliseconds: 200),
+                child: Text(
+                  "A look at the technologies powering this project",
+                  style: GoogleFonts.lora(
+                    color: _BookProjectShowcasePageState.parchment.withOpacity(
+                      0.7,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+              _ScrollFadeIn(
+                delay: const Duration(milliseconds: 400),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: const [
+                    _TechBubble("Flutter (Cross-Platform)"),
+                    _TechBubble("Open Library API"),
+                    _TechBubble("Custom REST API"),
+                    _TechBubble("PDF.js Integration"),
+                    _TechBubble("Token-based Auth"),
+                    _TechBubble("Responsive Design"),
+                    _TechBubble("Google Fonts"),
+                    _TechBubble("Env-Based Config"),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -339,128 +365,244 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionContent extends StatelessWidget {
-    final bool isMobile;
-    final double progress;
-    final String title;
-    final String body;
-    final Color accentColor;
-    final Widget? customVisual;
-
-  const _SectionContent({
-    required this.isMobile,
-    required this.progress,
-    required this.title,
-    required this.body,
-    required this.accentColor,
-    this.customVisual
-  });
-
+class _FinalCtaSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    Widget textContent = SizedBox(
-        width: isMobile ? double.infinity : 500,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 120),
+      child: Center(
         child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-            children: [
-                _SectionHeader(title: title, progress: progress, accentColor: accentColor),
-                const SizedBox(height: 25),
-                Text(
-                  body,
-                  textAlign: isMobile ? TextAlign.center : TextAlign.left,
-                  style: GoogleFonts.lato(
-                    fontSize: isMobile ? 18 : 19,
-                    height: 1.7,
-                    color: _RenaissanceAthenaeumPageState.sepiaInk,
-                  ),
+          children: [
+            Text(
+              "Ready to Dive In?",
+              style: GoogleFonts.lora(
+                fontSize: 42,
+                fontWeight: FontWeight.bold,
+                color: _BookProjectShowcasePageState.ink,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Explore the live application or view the source code on GitHub.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lora(
+                fontSize: 18,
+                color: _BookProjectShowcasePageState.ink.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _InkButton(
+                  text: "Explore Demo",
+                  onPressed: () {},
+                  isLarge: true,
                 ),
-            ],
+                const SizedBox(width: 20),
+                _InkButton(
+                  text: "View on GitHub",
+                  onPressed: () {},
+                  isLarge: true,
+                  color: _BookProjectShowcasePageState.coolAccent,
+                ),
+              ],
+            ),
+          ],
         ),
-    );
-    
-     if (customVisual == null) return Center(child: textContent);
-
-    final arrangement = isMobile
-        ? Column(children: [textContent, const SizedBox(height: 40), Expanded(child: customVisual!)])
-        : Row(children: [Expanded(flex: 3, child: textContent), const SizedBox(width: 60), Expanded(flex: 2, child: customVisual!)]);
-
-    return Opacity(
-      opacity: Curves.easeIn.transform(progress),
-      child: arrangement,
-    );
-  }
-}
-
-class _TechInfoPanel extends StatelessWidget {
-  final String title;
-  final String body;
-  final double progress;
-  const _TechInfoPanel({required this.title, required this.body, required this.progress});
-  
-  @override
-  Widget build(BuildContext context) {
-    final tProgress = Curves.easeOutCubic.transform(progress);
-    return Opacity(
-      opacity: tProgress,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-           Text(title, style: GoogleFonts.ebGaramond(
-              fontSize: 24, 
-              color: _RenaissanceAthenaeumPageState.sepiaInk,
-              fontWeight: FontWeight.bold)),
-           const SizedBox(height: 8),
-           Text(body, style: GoogleFonts.lato(
-              fontSize: 16,
-              height: 1.6,
-              color: _RenaissanceAthenaeumPageState.sepiaInk.withOpacity(0.8),
-           ))
-        ],
       ),
     );
   }
 }
 
-
-class _CalligraphyButton extends StatefulWidget {
-  final String text;
-  final VoidCallback onTap;
-
-  const _CalligraphyButton({required this.text, required this.onTap});
-
+class _FooterSection extends StatelessWidget {
   @override
-  __CalligraphyButtonState createState() => __CalligraphyButtonState();
+  Widget build(BuildContext context) {
+    return Container(
+      color: _BookProjectShowcasePageState.ink,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
+      child: Center(
+        child: Text(
+          "© ${DateTime.now().year} Mohit Sir. Project for educational purposes.",
+          style: GoogleFonts.lora(
+            fontSize: 14,
+            color: _BookProjectShowcasePageState.coolAccent,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class __CalligraphyButtonState extends State<_CalligraphyButton> {
+// --- HELPER & DECORATIVE WIDGETS ---
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ScrollFadeIn(
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.lora(
+          fontSize: 36,
+          fontWeight: FontWeight.bold,
+          color: _BookProjectShowcasePageState.warmAccent,
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingIcon extends StatelessWidget {
+  final IconData icon;
+  final double? top, bottom, left, right;
+  final double rotation;
+  final double speed;
+
+  const _FloatingIcon({
+    required this.icon,
+    this.top,
+    this.bottom,
+    this.left,
+    this.right,
+    required this.rotation,
+    required this.speed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+      child: Transform.rotate(
+        angle: rotation,
+        child: Icon(
+          icon,
+          size: 50,
+          color: _BookProjectShowcasePageState.deepPurple.withOpacity(0.1),
+        ),
+      ),
+    );
+  }
+}
+
+class _InkButton extends StatefulWidget {
+  final String text;
+  final VoidCallback onPressed;
+  final bool isLarge;
+  final Color color;
+
+  const _InkButton({
+    required this.text,
+    required this.onPressed,
+    this.isLarge = false,
+    this.color = _BookProjectShowcasePageState.warmAccent,
+  });
+
+  @override
+  __InkButtonState createState() => __InkButtonState();
+}
+
+class __InkButtonState extends State<_InkButton> {
+  bool _isHovering = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.translationValues(0, _isHovering ? -4 : 0, 0),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isLarge ? 32 : 28,
+            vertical: widget.isLarge ? 16 : 14,
+          ),
+          decoration: BoxDecoration(
+            color: _isHovering ? widget.color : Colors.transparent,
+            border: Border.all(color: widget.color, width: 2),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow:
+                _isHovering
+                    ? [
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: Offset(0, 5),
+                      ),
+                    ]
+                    : [],
+          ),
+          child: Text(
+            widget.text,
+            style: GoogleFonts.lora(
+              fontWeight: FontWeight.bold,
+              fontSize: widget.isLarge ? 16 : 14,
+              color:
+                  _isHovering
+                      ? (_BookProjectShowcasePageState.parchment)
+                      : widget.color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookCoverCard extends StatefulWidget {
+  final String imageUrl;
+  final String title;
+  final double rotation;
+  const _BookCoverCard({
+    required this.imageUrl,
+    required this.title,
+    this.rotation = 0,
+  });
+
+  @override
+  __BookCoverCardState createState() => __BookCoverCardState();
+}
+
+class __BookCoverCardState extends State<_BookCoverCard> {
   bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.text,
-              style: GoogleFonts.ebGaramond(
-                  color: _RenaissanceAthenaeumPageState.sepiaInk,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold),
+      onEnter: (event) => setState(() => _isHovered = true),
+      onExit: (event) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        transform:
+            Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(_isHovered ? 0 : 0.2)
+              ..rotateZ(widget.rotation)
+              ..scale(_isHovered ? 1.05 : 1.0),
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        width: 170,
+        decoration: BoxDecoration(
+          color: _BookProjectShowcasePageState.ink,
+          image: DecorationImage(
+            image: NetworkImage(widget.imageUrl),
+            fit: BoxFit.cover,
+          ),
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isHovered ? 0.35 : 0.2),
+              blurRadius: 20,
+              offset: Offset(5, 5),
             ),
-            const SizedBox(height: 5),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: 2,
-              width: _isHovered ? 120 : 60,
-              color: _RenaissanceAthenaeumPageState.goldAccent,
-            )
           ],
         ),
       ),
@@ -468,428 +610,400 @@ class __CalligraphyButtonState extends State<_CalligraphyButton> {
   }
 }
 
-// --- CUSTOM PAINTERS AND GENERATIVE VISUALS ---
+class _FeatureCard extends StatelessWidget {
+  final String title;
+  final Widget content;
+  final Color borderColor;
+  final IconData icon;
 
-class _GoldenMoteBackground extends StatelessWidget {
-  final List<GoldenMote> motes;
-  const _GoldenMoteBackground({required this.motes});
-  
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: MediaQuery.of(context).size,
-      painter: _GoldenMotePainter(motes),
-    );
-  }
-}
-class _GoldenMotePainter extends CustomPainter {
-  final List<GoldenMote> motes;
-  _GoldenMotePainter(this.motes);
+  const _FeatureCard({
+    required this.title,
+    required this.content,
+    required this.icon,
+    this.borderColor = _BookProjectShowcasePageState.warmAccent,
+  });
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = _RenaissanceAthenaeumPageState.goldAccent.withOpacity(0.5);
-    for(var mote in motes){
-       canvas.drawCircle(mote.position, mote.radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-
-class _VitruvianVisualizer extends StatelessWidget {
-  final double progress;
-  const _VitruvianVisualizer({required this.progress});
-  
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(double.infinity, double.infinity),
-      painter: _VitruvianPainter(Curves.easeInOut.transform(progress)),
-    );
-  }
-}
-class _VitruvianPainter extends CustomPainter {
-  final double progress;
-  _VitruvianPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if(progress == 0) return;
-    final center = size.center(Offset.zero);
-    final radius = min(size.width, size.height) / 3;
-
-    final paint = Paint()
-      ..color = _RenaissanceAthenaeumPageState.sepiaInk.withOpacity(0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    
-    // Draw Circle
-    canvas.drawCircle(center, radius * progress, paint);
-    
-    // Draw Square
-    final halfSide = radius * (1 / sqrt(2));
-    final rect = Rect.fromCenter(center: center, width: halfSide * 2 * progress, height: halfSide * 2 * progress);
-    canvas.drawRect(rect, paint);
-    
-    // Draw central abstract "book" or "frankenstein core"
-    final corePaint = Paint()
-      ..color = _RenaissanceAthenaeumPageState.tealAccent
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-    final innerRadius = radius * 0.3 * progress;
-    final path = Path();
-    for (int i=0; i < 5; i++) {
-        final angle1 = i * (pi*2/5) + progress*pi;
-        final angle2 = (i+2) * (pi*2/5) + progress*pi;
-        
-        if (i==0) {
-            path.moveTo(
-              center.dx + cos(angle1) * innerRadius,
-              center.dy + sin(angle1) * innerRadius
-            );
-        }
-        path.lineTo(
-            center.dx + cos(angle2) * innerRadius,
-            center.dy + sin(angle2) * innerRadius
-        );
-    }
-    path.close();
-    canvas.drawPath(
-        Path.from(path.computeMetrics().first.extractPath(0, path.computeMetrics().first.length * progress)), 
-        corePaint);
-    
-    // Draw knowledge lines
-    final numLines = (10 * progress).floor();
-    for (int i=0; i<numLines; i++){
-        final angle = (i/10) * pi * 2;
-        final start = center + Offset(cos(angle), sin(angle)) * (innerRadius + 5);
-        final end = center + Offset(cos(angle), sin(angle)) * radius;
-        canvas.drawLine(start, end, paint..strokeWidth=0.5);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-
-class _ConstellationVisualizer extends StatelessWidget {
-    final double progress;
-    const _ConstellationVisualizer({required this.progress});
-    
-    @override
-    Widget build(BuildContext context) {
-       return CustomPaint(
-          size: const Size(double.infinity, double.infinity),
-          painter: _ConstellationPainter(Curves.easeOut.transform(progress)),
-       );
-    }
-}
-class _ConstellationPainter extends CustomPainter {
-    final double progress;
-    final List<Offset> points = [];
-
-    _ConstellationPainter(this.progress){
-        final random = Random(42);
-        for(int i = 0; i < 25; i++){
-          points.add(Offset(random.nextDouble(), random.nextDouble()));
-        }
-    }
-    
-    @override
-    void paint(Canvas canvas, Size size) {
-       if (progress == 0) return;
-       
-       final starPaint = Paint()..color = _RenaissanceAthenaeumPageState.goldAccent;
-       final linePaint = Paint()
-          ..color = _RenaissanceAthenaeumPageState.terracottaAccent.withOpacity(0.5)
-          ..strokeWidth = 1.0;
-        
-       final scaledPoints = points.map((p) => Offset(p.dx * size.width, p.dy * size.height)).toList();
-
-       // Draw connections first
-       final linesToDraw = (scaledPoints.length * 1.5 * progress).floor();
-       int lineCount = 0;
-
-       for(int i=0; i < scaledPoints.length; i++) {
-           for(int j=i+1; j < scaledPoints.length; j++){
-               if (lineCount >= linesToDraw) break;
-               final distance = (scaledPoints[i] - scaledPoints[j]).distance;
-               if(distance < size.width * 0.25){
-                 canvas.drawLine(scaledPoints[i], scaledPoints[j], linePaint);
-                 lineCount++;
-               }
-           }
-       }
-
-       // Draw stars
-       final starsToDraw = (scaledPoints.length * progress).floor();
-       for(int i=0; i<starsToDraw; i++){
-         canvas.drawCircle(scaledPoints[i], 3, starPaint);
-       }
-    }
-
-    @override
-    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-
-class _GenerativeBookVisualizer extends StatelessWidget {
-    final double progress;
-    const _GenerativeBookVisualizer({required this.progress});
-
-    @override
-    Widget build(BuildContext context) {
-      return CustomPaint(
-        size: const Size(double.infinity, double.infinity),
-        painter: _BookPainter(Curves.easeOutCubic.transform(progress))
-      );
-    }
-}
-class _BookPainter extends CustomPainter {
-    final double progress;
-    _BookPainter(this.progress);
-
-    @override
-    void paint(Canvas canvas, Size size) {
-        if(progress == 0) return;
-
-        final center = size.center(Offset.zero);
-        final bookHeight = size.height * 0.65;
-        final bookWidth = bookHeight * 0.8;
-        
-        final bookPaint = Paint()
-          ..color = _RenaissanceAthenaeumPageState.sepiaInk.withOpacity(0.8)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0;
-
-        final path = Path();
-        path.moveTo(center.dx, center.dy - bookHeight / 2); // Top of spine
-        path.quadraticBezierTo(
-          center.dx - bookWidth/2 - 20, center.dy,
-          center.dx, center.dy + bookHeight / 2 // Bottom of spine
-        );
-         path.quadraticBezierTo(
-          center.dx + bookWidth/2 + 20, center.dy,
-          center.dx, center.dy - bookHeight / 2 // Back to top
-        );
-        path.close();
-        
-        final animatedPath = Path.from(path.computeMetrics().first.extractPath(0, path.computeMetrics().first.length * progress));
-        canvas.drawPath(animatedPath, bookPaint);
-        
-        // Draw content inside
-        if (progress > 0.5) {
-          final contentProgress = (progress-0.5)*2;
-          final contentPaint = Paint()..color = _RenaissanceAthenaeumPageState.terracottaAccent.withOpacity(0.7)..strokeWidth=1.0;
-          for (int i=0; i<10; i++){
-            final y = lerpDouble(center.dy - bookHeight/3, center.dy + bookHeight/3, i/9)!;
-            final lineLength = bookWidth * 0.3 * contentProgress;
-            canvas.drawLine(Offset(center.dx-bookWidth*0.35, y), Offset(center.dx-bookWidth*0.35 + lineLength, y), contentPaint);
-          }
-           final diagramPaint = Paint()..color=_RenaissanceAthenaeumPageState.tealAccent..strokeWidth=1.5..style=PaintingStyle.stroke;
-           canvas.drawCircle(Offset(center.dx + bookWidth * 0.2, center.dy), bookWidth * 0.1 * contentProgress, diagramPaint);
-        }
-    }
-    
-    @override
-    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-
-class _TechStackVisualizer extends StatelessWidget {
-    final double progress;
-    const _TechStackVisualizer({required this.progress});
-
-    @override
-    Widget build(BuildContext context) {
-        return CustomPaint(
-            size: const Size(double.infinity, double.infinity),
-            painter: _TechStackPainter(Curves.easeInOut.transform(progress)),
-        );
-    }
-}
-class _TechStackPainter extends CustomPainter {
-    final double progress;
-    _TechStackPainter(this.progress);
-
-    @override
-    void paint(Canvas canvas, Size size) {
-        if(progress == 0) return;
-        final center = size.center(Offset.zero);
-        
-        final layers = [
-            {'name': 'Python / Pandas / Scikit-Learn', 'color': _RenaissanceAthenaeumPageState.tealAccent, 'radius': 0.8},
-            {'name': 'Flutter / Dart', 'color': _RenaissanceAthenaeumPageState.terracottaAccent, 'radius': 0.6},
-            {'name': 'Flask / SQL / AWS', 'color': _RenaissanceAthenaeumPageState.goldAccent, 'radius': 0.35},
-        ];
-
-        for(var layer in layers){
-          _drawLayer(canvas, size, center, layer['name'] as String, layer['color'] as Color, layer['radius'] as double);
-        }
-    }
-    
-    void _drawLayer(Canvas canvas, Size size, Offset center, String name, Color color, double radiusFactor){
-      final radius = (min(size.width, size.height) / 2.2) * radiusFactor;
-      final layerProgress = (progress - (1-radiusFactor) * 0.5).clamp(0.0, 1.0) / (radiusFactor + 0.1);
-      if (layerProgress == 0) return;
-      
-      final paint = Paint()..color = color.withOpacity(0.8)..strokeWidth=1.5..style=PaintingStyle.stroke;
-
-      final path = Path();
-      final angleOffset = (1 - radiusFactor) * pi;
-      path.addArc(Rect.fromCircle(center: center, radius: radius), angleOffset, (pi * 1.5) * layerProgress);
-      canvas.drawPath(path, paint);
-
-      final textAngle = (pi/4) + angleOffset;
-      final textStartPoint = center + Offset(cos(textAngle), sin(textAngle)) * radius;
-      final textEndPoint = center + Offset(cos(textAngle), sin(textAngle)) * (radius + 20);
-
-      if (layerProgress > 0.5){
-        final textLineProgress = (layerProgress - 0.5) * 2;
-        canvas.drawLine(textStartPoint, Offset.lerp(textStartPoint, textEndPoint, textLineProgress)!, paint..strokeWidth = 1.0);
-        
-        if (textLineProgress > 0.8) {
-           final textPainter = TextPainter(
-              text: TextSpan(text: name, style: GoogleFonts.lato(fontSize: 14, color: color, fontWeight: FontWeight.bold)),
-              textDirection: TextDirection.ltr
-            )..layout();
-           textPainter.paint(canvas, textEndPoint + const Offset(5, -8));
-        }
-      }
-    }
-
-    @override
-    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-
-class _ArchitecturalBlueprints extends StatelessWidget {
-  final double progress;
-  const _ArchitecturalBlueprints({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final tProgress = Curves.easeInOutCubic.transform(progress);
-    
-    final desktop = Matrix4.identity()
-      ..setEntry(3, 2, 0.001)
-      ..translate(150 * (1-tProgress), 0.0)
-      ..rotateY(-0.7 * (1 - tProgress));
-
-    final mobile = Matrix4.identity()
-      ..setEntry(3, 2, 0.001)
-      ..translate(-150 * (1-tProgress), 50.0)
-      ..rotateY(0.7 * (1 - tProgress));
-    
-    return Stack(
-      alignment: Alignment.center,
+  factory _FeatureCard.search() => _FeatureCard(
+    title: "Live Book Search",
+    icon: Icons.search,
+    content: Column(
       children: [
-          Transform(
-            transform: desktop, alignment: Alignment.center,
-            child: const _Blueprint(width: 450, height: 280),
+        Text(
+          "Uses the Open Library API to find books, authors, and ratings.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: _BookProjectShowcasePageState.coolAccent.withOpacity(0.5),
+            ),
           ),
-          Transform(
-            transform: mobile, alignment: Alignment.center,
-            child: const _Blueprint(width: 140, height: 280),
-          )
+          child: Row(
+            children: [
+              const Icon(Icons.search, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Dune...|",
+                  style: TextStyle(color: _BookProjectShowcasePageState.ink),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
-    );
-  }
-}
-class _Blueprint extends StatelessWidget {
-  final double width;
-  final double height;
-  const _Blueprint({required this.width, required this.height});
+    ),
+  );
+
+  factory _FeatureCard.discussion() => _FeatureCard(
+    title: "Discussion & Reviews",
+    icon: Icons.reviews_outlined,
+    borderColor: _BookProjectShowcasePageState.deepPurple,
+    content: Column(
+      children: [
+        Text(
+          "Users can comment, upvote, and use rich text formatting.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Container(
+          padding: const EdgeInsets.all(8),
+          color: Colors.black.withOpacity(0.03),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  CircleAvatar(radius: 12),
+                  SizedBox(width: 8),
+                  Text("ElenaR", style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 5),
+              RichText(
+                text: TextSpan(
+                  style: GoogleFonts.lora(
+                    color: _BookProjectShowcasePageState.ink,
+                  ),
+                  children: const [
+                    TextSpan(text: "That reveal was "),
+                    TextSpan(
+                      text: "amazing!",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: " But did anyone else notice the hint on page ",
+                    ),
+                    TextSpan(
+                      text: "42?",
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.arrow_upward_rounded,
+                    color: _BookProjectShowcasePageState.vibrantGreen,
+                    size: 20,
+                  ),
+                  Text(" 17", style: GoogleFonts.lora()),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.pdfReader() => _FeatureCard(
+    title: "In-App PDF Reader",
+    icon: Icons.picture_as_pdf,
+    content: Column(
+      children: [
+        Text(
+          "Utilizes PDF.js to render PDF documents directly in the browser for a seamless reading experience.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 20),
+        const Icon(
+          Icons.chrome_reader_mode_outlined,
+          size: 50,
+          color: _BookProjectShowcasePageState.warmAccent,
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.crossPlatform() => _FeatureCard(
+    title: "Cross-Platform Support",
+    icon: Icons.devices,
+    borderColor: _BookProjectShowcasePageState.vibrantGreen,
+    content: Column(
+      children: [
+        Text(
+          "Built with Flutter to ensure a consistent experience on Web, Windows, and Linux from a single codebase.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            const Icon(Icons.public, size: 30), // Web
+            const Icon(Icons.desktop_windows, size: 30),
+            const Icon(Icons.mobile_friendly, size: 30), // Linux
+            // NOTE: Add a small linux logo to your assets folder
+          ],
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.userAuth() => _FeatureCard(
+    title: "Token-Based Authentication",
+    icon: Icons.security,
+    content: Column(
+      children: [
+        Text(
+          "Secure user authentication allows for personalized experiences like saving reviews and discussion history.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.person_outline),
+            Icon(Icons.arrow_forward),
+            Icon(Icons.lock_outline),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.itemBased() => _FeatureCard(
+    title: "Item-Based Recommendations",
+    icon: Icons.auto_awesome,
+    borderColor: _BookProjectShowcasePageState.coolAccent,
+    content: Column(
+      children: [
+        Text(
+          "Suggests books similar to the one you’re viewing using item-to-item collaborative filtering.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: const [
+            Icon(Icons.book, color: _BookProjectShowcasePageState.coolAccent),
+            SizedBox(width: 8),
+            Text("If you liked 'Dune', try 'Foundation'!"),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.collaborative() => _FeatureCard(
+    title: "Collaborative Recommendations",
+    icon: Icons.people_alt,
+    borderColor: _BookProjectShowcasePageState.vibrantGreen,
+    content: Column(
+      children: [
+        Text(
+          "Recommends books based on what similar users have enjoyed.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: const [
+            Icon(
+              Icons.group,
+              color: _BookProjectShowcasePageState.vibrantGreen,
+            ),
+            SizedBox(width: 8),
+            Text("Readers like you also enjoyed..."),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.llm() => _FeatureCard(
+    title: "LLM Recommendations",
+    icon: Icons.smart_toy,
+    borderColor: _BookProjectShowcasePageState.deepPurple,
+    content: Column(
+      children: [
+        Text(
+          "Uses large language models to suggest books based on your interests and reading history.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: const [
+            Icon(
+              Icons.lightbulb,
+              color: _BookProjectShowcasePageState.deepPurple,
+            ),
+            SizedBox(width: 8),
+            Text("AI-powered suggestions just for you!"),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  factory _FeatureCard.emotionBased() => _FeatureCard(
+    title: "Emotion-Based Recommendations",
+    icon: Icons.emoji_emotions,
+    borderColor: _BookProjectShowcasePageState.warmAccent,
+    content: Column(
+      children: [
+        Text(
+          "Find books that match your current mood or emotional needs.",
+          style: GoogleFonts.lora(),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: const [
+            Icon(Icons.mood, color: _BookProjectShowcasePageState.warmAccent),
+            SizedBox(width: 8),
+            Text("Feeling adventurous? Try a thriller!"),
+          ],
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
-      height: height,
+      width: 320,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _RenaissanceAthenaeumPageState.tealAccent.withOpacity(0.05), // Blueprint blue
-        border: Border.all(color: _RenaissanceAthenaeumPageState.tealAccent.withOpacity(0.7), width: 1.5),
-        borderRadius: BorderRadius.circular(5)
+        color: _BookProjectShowcasePageState.parchment,
+        border: Border.all(color: borderColor, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: Offset(5, 5),
+          ),
+        ],
       ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 0.5, sigmaY: 0.5),
-        child: const SizedBox.expand(),
-      )
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: borderColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.lora(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20, thickness: 1),
+          content,
+        ],
+      ),
     );
   }
 }
 
+class _TechBubble extends StatelessWidget {
+  final String text;
+  const _TechBubble(this.text);
 
-class _Marquee extends StatefulWidget {
-    final String text;
-    final Duration duration;
-    final bool reversed;
-    final Color color;
-    
-    const _Marquee({required this.text, this.duration = const Duration(seconds: 30), this.reversed=false, required this.color});
-
-    @override
-    __MarqueeState createState() => __MarqueeState();
-}
-class __MarqueeState extends State<_Marquee> with SingleTickerProviderStateMixin {
-    late AnimationController _controller;
-    
-    @override
-    void initState() {
-      super.initState();
-       _controller = AnimationController(vsync: this, duration: widget.duration)..repeat();
-    }
-    
-    @override
-    void dispose() { _controller.dispose(); super.dispose();}
-    
-    @override
-    Widget build(BuildContext context) {
-       return AnimatedBuilder(
-           animation: _controller,
-           builder: (context, child){
-               return CustomPaint(
-                 size: const Size(double.infinity, 30),
-                 painter: _MarqueePainter(
-                   text: widget.text,
-                   color: widget.color,
-                   progress: widget.reversed ? 1.0 - _controller.value : _controller.value
-                 )
-               );
-           }
-       );
-    }
-}
-class _MarqueePainter extends CustomPainter {
-    final String text;
-    final double progress;
-    final Color color;
-    _MarqueePainter({required this.text, required this.progress, required this.color});
-    @override
-    void paint(Canvas canvas, Size size) {
-        final textStyle = TextStyle(
-          fontFamily: GoogleFonts.lato().fontFamily,
-          fontSize: 18,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: _BookProjectShowcasePageState.parchment.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.lato(
+          color: _BookProjectShowcasePageState.parchment,
+          fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: color
-        );
-        final textPainter = TextPainter(text: TextSpan(text: text, style: textStyle), textDirection: TextDirection.ltr)..layout();
-        final textWidth = textPainter.width;
-        
-        double dx = lerpDouble(0, -textWidth, progress)!;
-
-        canvas.save();
-        canvas.clipRect(Rect.fromLTWH(0,0, size.width, size.height));
-        while(dx < size.width){
-            textPainter.paint(canvas, Offset(dx, 0));
-            dx += textWidth;
-        }
-        canvas.restore();
-    }
-    @override
-    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+        ),
+      ),
+    );
+  }
 }
+
+class _ScrollFadeIn extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+  const _ScrollFadeIn({
+    required this.child,
+    this.delay = Duration.zero,
+    this.duration = const Duration(milliseconds: 500),
+  });
+  @override
+  __ScrollFadeInState createState() => __ScrollFadeInState();
+}
+
+class __ScrollFadeInState extends State<_ScrollFadeIn>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onVisibilityChanged(VisibilityInfo info) {
+    if (info.visibleFraction > 0.05 &&
+        _controller.status != AnimationStatus.completed) {
+      Future.delayed(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return VisibilityDetector(
+      key: UniqueKey(),
+      onVisibilityChanged: _onVisibilityChanged,
+      child: FadeTransition(opacity: _opacity, child: widget.child),
+    );
+  }
+}
+
+// NOTE: Remember to add a 'linux_logo.png' to an 'assets' folder and
+// declare it in your pubspec.yaml if you use the cross-platform card as-is.
+// You can find a suitable creative commons logo online easily.
+
+// pubspec.yaml:
+// flutter:
+//   assets:
+//     - assets/
