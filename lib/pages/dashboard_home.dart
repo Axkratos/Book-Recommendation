@@ -784,6 +784,17 @@ class _BookCardSectionState extends State<BookCardSection> {
     final books =
         widget.type == 'item' ? bookProvider.itemBook : bookProvider.books;
 
+    // Responsive: determine columns based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    int crossAxisCount = 4;
+    if (screenWidth < 500) {
+      crossAxisCount = 1;
+    } else if (screenWidth < 800) {
+      crossAxisCount = 2;
+    } else if (screenWidth < 1100) {
+      crossAxisCount = 3;
+    }
+
     return FutureBuilder<void>(
       future: _booksFuture,
       builder: (context, snapshot) {
@@ -823,7 +834,7 @@ class _BookCardSectionState extends State<BookCardSection> {
         }
 
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(screenWidth < 500 ? 8 : 24),
           decoration: BoxDecoration(
             color: kCardBackgroundColor,
             borderRadius: BorderRadius.circular(16),
@@ -838,9 +849,9 @@ class _BookCardSectionState extends State<BookCardSection> {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 0.8,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: screenWidth < 500 ? 0.65 : 0.8,
               mainAxisSpacing: 20,
               crossAxisSpacing: 20,
             ),
@@ -848,7 +859,11 @@ class _BookCardSectionState extends State<BookCardSection> {
             itemBuilder: (context, index) {
               final book = books[index];
               final rank = index + 1;
-              return BookGridCard(book: book, rank: rank);
+              return BookGridCard(
+                book: book,
+                rank: rank,
+                isMobile: screenWidth < 500,
+              );
             },
           ),
         );
@@ -857,21 +872,18 @@ class _BookCardSectionState extends State<BookCardSection> {
   }
 }
 
-// YOUR ORIGINAL WIDGET - UNCHANGED IN STRUCTURE.
-// We are only redefining the theme variables it consumes.
-final TextStyle vintageTextStyle = GoogleFonts.lato(
-  color: kPrimaryTextColor,
-); // Modernized font
-final Color vintageBorderColor = kGoldAccent.withOpacity(
-  0.5,
-); // Modernized color
-const vintageRed = kRedAccent;
-
+// Update BookGridCard to accept isMobile and adjust style
 class BookGridCard extends StatefulWidget {
-  const BookGridCard({super.key, required this.book, required this.rank});
+  const BookGridCard({
+    super.key,
+    required this.book,
+    required this.rank,
+    this.isMobile = false,
+  });
 
   final Book book;
   final int rank;
+  final bool isMobile;
 
   @override
   State<BookGridCard> createState() => _BookGridCardState();
@@ -882,12 +894,12 @@ class _BookGridCardState extends State<BookGridCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = widget.isMobile;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
       child: GestureDetector(
         onTap: () {
-          // Navigate to book details page
           context.go(
             '/book/${widget.book.id}/${Uri.encodeComponent(widget.book.title)}',
           );
@@ -897,7 +909,7 @@ class _BookGridCardState extends State<BookGridCard> {
             border: Border.all(width: 1.5, color: vintageBorderColor),
             borderRadius: BorderRadius.circular(8),
           ),
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(isMobile ? 4.0 : 8.0),
           child: Stack(
             children: [
               // Thumbnail image
@@ -921,12 +933,12 @@ class _BookGridCardState extends State<BookGridCard> {
               ),
               // Rank badge (always visible)
               Positioned(
-                top: 8,
-                left: 8,
+                top: isMobile ? 4 : 8,
+                left: isMobile ? 4 : 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 6 : 8,
+                    vertical: isMobile ? 2 : 4,
                   ),
                   decoration: BoxDecoration(
                     color: kCardBackgroundColor.withOpacity(0.85),
@@ -935,22 +947,22 @@ class _BookGridCardState extends State<BookGridCard> {
                   child: Text(
                     '#${widget.rank}',
                     style: vintageTextStyle.copyWith(
-                      fontSize: 16,
+                      fontSize: isMobile ? 13 : 16,
                       fontWeight: FontWeight.bold,
                       color: kPrimaryTextColor.withOpacity(0.7),
                     ),
                   ),
                 ),
               ),
-              // Info overlay (only on hover)
-              if (_hovering)
+              // Info overlay (only on hover or always on mobile)
+              if (_hovering || isMobile)
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.65),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(isMobile ? 8 : 12),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -959,7 +971,7 @@ class _BookGridCardState extends State<BookGridCard> {
                           widget.book.title,
                           style: vintageTextStyle.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: isMobile ? 14 : 16,
                             color: Colors.white,
                           ),
                           maxLines: 2,
@@ -969,7 +981,7 @@ class _BookGridCardState extends State<BookGridCard> {
                         Text(
                           'by ${widget.book.authors}',
                           style: vintageTextStyle.copyWith(
-                            fontSize: 14,
+                            fontSize: isMobile ? 12 : 14,
                             color: Colors.white70,
                           ),
                           maxLines: 1,
@@ -984,13 +996,13 @@ class _BookGridCardState extends State<BookGridCard> {
                                   Icon(
                                     Icons.star,
                                     color: Colors.amber,
-                                    size: 16,
+                                    size: isMobile ? 13 : 16,
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
                                     (widget.book.averageRating).toString(),
                                     style: vintageTextStyle.copyWith(
-                                      fontSize: 13,
+                                      fontSize: isMobile ? 11 : 13,
                                       color: Colors.white,
                                     ),
                                   ),
@@ -1003,7 +1015,7 @@ class _BookGridCardState extends State<BookGridCard> {
                               Text(
                                 '${widget.book.publishedYear}',
                                 style: vintageTextStyle.copyWith(
-                                  fontSize: 13,
+                                  fontSize: isMobile ? 11 : 13,
                                   color: Colors.white70,
                                 ),
                               ),
