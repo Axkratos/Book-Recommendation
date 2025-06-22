@@ -23,9 +23,16 @@ class ChatWidget extends StatefulWidget {
   State<ChatWidget> createState() => _ChatWidgetState();
 }
 
-class _ChatWidgetState extends State<ChatWidget> {
+class _ChatWidgetState extends State<ChatWidget>
+    with SingleTickerProviderStateMixin {
   bool _isChatOpen = false;
   String? _sessionId;
+
+  // Add animation controller and variables
+  late AnimationController _expandController;
+  late Animation<double> _sizeAnimation;
+  late Animation<double> _radiusAnimation;
+  late Animation<double> _opacityAnimation;
 
   final String baseUrl =
       'http://localhost:5000'; // Replace with your backend URL
@@ -41,8 +48,32 @@ class _ChatWidgetState extends State<ChatWidget> {
   bool _isSending = false;
   int _userMessageCount = 0;
 
+  // Add this variable
+  bool _showChatContent = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _sizeAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeOutBack,
+    );
+    _radiusAnimation = Tween<double>(begin: 32, end: 24).animate(
+      CurvedAnimation(parent: _expandController, curve: Curves.easeOut),
+    );
+    _opacityAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeIn,
+    );
+  }
+
   @override
   void dispose() {
+    _expandController.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -110,16 +141,16 @@ class _ChatWidgetState extends State<ChatWidget> {
     _controller.clear();
 
     _userMessageCount++;
-    // When userMessageCount == 5, only show recommendations, skip chat
+    _addMessage('user', text: userMessage); // Always show user's message
+    _scrollToBottom(50);
+
+    // When userMessageCount == 5, only show recommendations, skip chat response
     if (_userMessageCount % 5 == 0) {
       await _fetchRecommendations();
       setState(() => _isSending = false);
       _scrollToBottom();
       return;
     }
-
-    _addMessage('user', text: userMessage);
-    _scrollToBottom(50);
 
     final url = Uri.parse(
       '$chatApiBaseUrl/emotion/api/sessions/$_sessionId/chat',
@@ -208,12 +239,25 @@ class _ChatWidgetState extends State<ChatWidget> {
     );
   }
 
-  void _toggleChat(bool open) {
+  void _toggleChat(bool open) async {
     HapticFeedback.mediumImpact();
-    setState(() => _isChatOpen = open);
-    if (open && _sessionId == null) {
-      _messages.clear(); // Clear old messages
-      _initializeSession();
+    if (open) {
+      setState(() {
+        _isChatOpen = true;
+        _showChatContent = true;
+      });
+      _expandController.forward();
+      if (_sessionId == null) {
+        _messages.clear(); // Clear old messages
+        _initializeSession();
+      }
+    } else {
+      setState(() => _showChatContent = false);
+      // Wait for fade out before shrinking
+      await Future.delayed(const Duration(milliseconds: 200));
+      _expandController.reverse();
+      await Future.delayed(const Duration(milliseconds: 400));
+      setState(() => _isChatOpen = false);
     }
   }
 
@@ -270,25 +314,47 @@ class _ChatWidgetState extends State<ChatWidget> {
   }
 
   Widget _buildChatWindow({Key? key}) {
-    return Container(
-      key: key,
-      width: 360,
-      height: 600,
-      clipBehavior: Clip.antiAlias, // Important for child border radius
-      decoration: BoxDecoration(
-        color: kModernDarkBlue,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+    return AnimatedBuilder(
+      animation: _expandController,
+      builder: (context, child) {
+        return AnimatedOpacity(
+          opacity: _opacityAnimation.value,
+          duration: const Duration(milliseconds: 300),
+          child: AnimatedContainer(
+            key: key,
+            width: 64 + (296 * _sizeAnimation.value), // from 64 to 360
+            height: 64 + (536 * _sizeAnimation.value), // from 64 to 600
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutBack,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: kModernDarkBlue,
+              borderRadius: BorderRadius.circular(_radiusAnimation.value),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child:
+                _sizeAnimation.value < 0.7
+                    ? const SizedBox.shrink()
+                    : AnimatedOpacity(
+                      opacity: _showChatContent ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Column(
+                        children: [
+                          _buildChatHeader(),
+                          _buildMessageList(),
+                          _buildInputArea(),
+                        ],
+                      ),
+                    ),
           ),
-        ],
-      ),
-      child: Column(
-        children: [_buildChatHeader(), _buildMessageList(), _buildInputArea()],
-      ),
+        );
+      },
     );
   }
 
@@ -298,7 +364,7 @@ class _ChatWidgetState extends State<ChatWidget> {
       child: Row(
         children: [
           Text(
-            "Lumina AI",
+            "Book Buddy",
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 22,
