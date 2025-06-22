@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
@@ -75,11 +76,7 @@ class _ChatWidgetState extends State<ChatWidget> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() => _sessionId = data['session_id']);
-        _addMessage(
-          'bot',
-          text:
-              'Hi! I\'m Lumina, your AI book scout. Tell me about a book you loved or how you\'re feeling today!',
-        );
+        _addMessage('bot', text: 'Session established!');
       } else {
         _addMessage(
           'bot',
@@ -343,8 +340,12 @@ class _ChatWidgetState extends State<ChatWidget> {
               author: data['author']?.toString() ?? 'Unknown Author',
               description: data['description']?.toString() ?? 'No description.',
               onTap: () {
-                // Here you would navigate to a book details page
-                print("Tapped on ${data['title'] ?? 'Unknown Title'}");
+                // Use context.go to navigate to the book details page
+                final isbn = data['isbn10']?.toString() ?? '';
+                final title = data['title']?.toString() ?? '';
+                if (isbn.isNotEmpty && title.isNotEmpty) {
+                  context.go('/book/$isbn/$title');
+                }
                 HapticFeedback.lightImpact();
               },
             );

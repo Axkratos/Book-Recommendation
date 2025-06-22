@@ -117,8 +117,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
         ),
-      ),
-    );
+      ));
   }
 
   @override
@@ -212,7 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           // --- Step 3: Use the new, encapsulated ChatWidget ---
-          const ChatWidget(),
+          // const ChatWidget(),   // <-- REMOVE THIS LINE
         ],
       ),
     );
